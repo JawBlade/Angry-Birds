@@ -33,6 +33,8 @@ space.add(floor)
 
 background_image = pygame.image.load(os.path.join('images/back.jpg')).convert()
 background_image = pygame.transform.scale(background_image, (width, height))
+sling_shot = pygame.image.load(os.path.join('images/slingshot.png')).convert()
+sling_shot = pygame.transform.scale(sling_shot, (200,300))
 
 while running:
 
@@ -42,6 +44,7 @@ while running:
 
     if background_image:
         screen.blit(background_image, (0,0))
+        screen.blit(sling_shot, (100,400))
     else:
         screen.fill("black")
     
