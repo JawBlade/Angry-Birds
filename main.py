@@ -8,6 +8,7 @@ import math
 
 
 width, height = (1280, 720)
+
 pygame.init()
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
@@ -19,13 +20,12 @@ space.gravity = (0,900)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 # Adds the boxes
-square = Box((100, 100), (1280 // 2, 720 // 2), "brown")
-body, box = square.create()
-space.add(body, box)
+square = Box((100, 100), (1280 // 2, 720 // 2), image_path="images/box.jpeg")
+square_b, box = square.create(space)
 
-bbox = Box((50, 100), (900, 720 // 2), "brown")
-body, box = bbox.create()
-space.add(body, box)
+# create box with its image owned by the Box instance
+bbox = Box((50, 100), (900, 720 // 2), image_path="images/box.jpeg")
+bbox_b, box = bbox.create(space)
 
 # Adds Floor
 floor_body = space.static_body
@@ -34,10 +34,13 @@ floor = pymunk.Segment(floor_body, (0, 0), (1280, 0), 1)
 floor.color = (103, 177, 20, 0)
 space.add(floor)
 
+
+
 # Adds Images
 background_image = image('images/back.jpg', (width, height))
-sling_shot = image('images\slingshot.png', (200,300))
+sling_shot = image('images/slingshot.png', (200,300))
 red = image("images/red_bird.webp", (64, 64))
+
 
 while running:
 
@@ -52,7 +55,8 @@ while running:
     else:
         screen.fill("black")
     
-    space.debug_draw(draw_options) # Draws Box on every frame
+    bbox.mask(screen, square_b)
+    square.mask(screen, bbox_b)
 
     pygame.display.flip()
 
