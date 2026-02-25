@@ -20,11 +20,11 @@ space.gravity = (0,900)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 # Adds the boxes
-square = Box((100, 100), (1280 // 2, 720 // 2), image_path="images/box.jpeg")
+square = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
 square_b, box = square.create(space)
 
 # create box with its image owned by the Box instance
-bbox = Box((50, 100), (900, 720 // 2), image_path="images/box.jpeg")
+bbox = Box((40, 100), (1000, 517), image_path="images/box.jpeg")
 bbox_b, box = bbox.create(space)
 
 # Adds Floor
@@ -40,6 +40,7 @@ space.add(floor)
 background_image = image('images/back.jpg', (width, height))
 sling_shot = image('images/slingshot.png', (200,300))
 red = image("images/red_bird.webp", (64, 64))
+pig = image("images/pig.webp", (64, 64))
 
 
 while running:
@@ -52,6 +53,7 @@ while running:
         screen.blit(background_image, (0,0))
         screen.blit(sling_shot, (100,320))
         screen.blit(red, (70,505))
+        screen.blit(pig, (1025,505))
     else:
         screen.fill("black")
     
