@@ -36,6 +36,45 @@ space.add(floor)
 
 
 
+
+
+
+
+
+
+
+mass = 10
+radius = 25
+# Calculate the moment of inertia (Pymunk can do this automatically for basic shapes)
+moment = pymunk.moment_for_circle(mass, 0, radius)
+
+# 3. Create a Body
+# A dynamic body moves and responds to forces.
+# Arguments are mass and moment of inertia.
+body = pymunk.Body(mass, moment)
+body.position = (300, 400) # Set the initial position (x, y)
+
+# 4. Create a Circle shape and associate it with the body
+# Arguments are the body, radius, and an optional offset from the body's center of gravity.
+circle_shape = pymunk.Circle(body, radius)
+circle_shape.friction = 0.5
+circle_shape.elasticity = 0.8 # Bounciness
+
+# 5. Add the body and shape to the space
+space.add(body, circle_shape)
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Adds Images
 background_image = image('images/back.jpg', (width, height))
 sling_shot = image('images/slingshot.png', (300,300))
@@ -56,6 +95,8 @@ while running:
         screen.blit(pig, (1025,505))
     else:
         screen.fill("black")
+
+    space.debug_draw(draw_options)
     
     bbox.mask(screen, square_b)
     square.mask(screen, bbox_b)
