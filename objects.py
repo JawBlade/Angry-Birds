@@ -23,11 +23,11 @@ class Box:
         body.position = self.pos
 
         # Create a Box
-        box = pymunk.Poly.create_box(body, self.size)
+        box = pymunk.Poly.create_box(body, self.size, radius=2)
 
         space.add(body, box)
         
-        return body, box
+        return body
 
     def mask(self, screen, body):
         # Render the image centered on the physics body

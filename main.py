@@ -4,6 +4,7 @@ import pymunk.pygame_util
 import os
 from helpers import image
 from objects import Box
+from birds import bird
 import math
 
 
@@ -20,12 +21,12 @@ space.gravity = (0,900)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 # Adds the boxes
-square = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
-square_b, box = square.create(space)
+box_1_body = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
+box_1 = box_1_body.create(space)
 
 # create box with its image owned by the Box instance
-bbox = Box((40, 100), (1000, 517), image_path="images/box.jpeg")
-bbox_b, box = bbox.create(space)
+box_2_body = Box((40, 100), (1000, 517), image_path="images/box.jpeg")
+box_2 = box_2_body.create(space)
 
 # Adds Floor
 floor_body = space.static_body
@@ -34,51 +35,13 @@ floor = pymunk.Segment(floor_body, (0, 0), (1280, 0), 1)
 floor.color = (103, 177, 20, 0)
 space.add(floor)
 
-
-
-
-
-
-
-
-
-
-mass = 10
-radius = 25
-# Calculate the moment of inertia (Pymunk can do this automatically for basic shapes)
-moment = pymunk.moment_for_circle(mass, 0, radius)
-
-# 3. Create a Body
-# A dynamic body moves and responds to forces.
-# Arguments are mass and moment of inertia.
-body = pymunk.Body(mass, moment)
-body.position = (300, 400) # Set the initial position (x, y)
-
-# 4. Create a Circle shape and associate it with the body
-# Arguments are the body, radius, and an optional offset from the body's center of gravity.
-circle_shape = pymunk.Circle(body, radius)
-circle_shape.friction = 0.5
-circle_shape.elasticity = 0.8 # Bounciness
-
-# 5. Add the body and shape to the space
-space.add(body, circle_shape)
-
-
-
-
-
-
-
-
-
-
-
+red_body = bird(0.6, 27, (70,501), image_path="images/red_bird.webp")
+red = red_body.create(space)
 
 
 # Adds Images
 background_image = image('images/back.jpg', (width, height))
 sling_shot = image('images/slingshot.png', (300,300))
-red = image("images/red_bird.webp", (64, 64))
 pig = image("images/pig.webp", (64, 64))
 
 
@@ -91,15 +54,15 @@ while running:
     if background_image:
         screen.blit(background_image, (0,0))
         screen.blit(sling_shot, (75,320))
-        screen.blit(red, (70,501))
         screen.blit(pig, (1025,505))
     else:
         screen.fill("black")
 
     space.debug_draw(draw_options)
     
-    bbox.mask(screen, square_b)
-    square.mask(screen, bbox_b)
+    box_1_body.mask(screen, box_1)
+    box_2_body.mask(screen, box_2)
+    red_body.mask(screen, red)
 
     pygame.display.flip()
 
