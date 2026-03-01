@@ -26,11 +26,14 @@ class bird:
         body.position = self.pos
 
         circle = pymunk.Circle(body, radius)
-
+        circle.friction = 1
+        
         space.add(body, circle)
 
         return body
 
+    # Gemini pretty much implemented all the image stuff for the birds. 
+    # I do understand how it works tho.
     def mask(self, screen, body):
         x, y = body.position
         
@@ -41,12 +44,12 @@ class bird:
                 self._cached_img = pygame.transform.smoothscale(self._image_original, (diameter, diameter))
             img = self._cached_img
         else:
-            # red circle if no image
             img = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
             pygame.draw.circle(img, (255, 0, 0), (self.radius, self.radius), self.radius)
 
         angle_degrees = math.degrees(-body.angle)
         img_rotated = pygame.transform.rotate(img, angle_degrees)
-        offset = pygame.Vector2(-7, -5)
-        rect = img_rotated.get_rect(center=(int(x) + offset.x, int(y) + offset.y))
-        screen.blit(img_rotated, rect.topleft)
+        offset = (-7, -5)
+        world_pos = body.local_to_world(offset)
+        rect = img_rotated.get_rect(center=(int(world_pos.x), int(world_pos.y)))
+        screen.blit(img_rotated, rect)

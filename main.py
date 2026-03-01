@@ -34,11 +34,15 @@ boxes = [
 floor_body = space.static_body
 floor_body.position = (0, 567)
 floor = pymunk.Segment(floor_body, (0, 0), (1280, 0), 1)
+floor.friction = 1
 floor.color = (103, 177, 20, 0)
 space.add(floor)
 
 red_body = bird(0.6, 27, (70,501), image_path="images/red_bird.webp")
 red = red_body.create(space)
+
+red_bod = bird(0.6, 27, (75,400), image_path="images/red_bird.webp")
+re = red_bod.create(space)
 
 
 # Adds Images
@@ -64,6 +68,7 @@ while running:
         body.mask(screen, box)
     
     red_body.mask(screen, red)
+    red_bod.mask(screen, re)
 
     pygame.display.flip()
 

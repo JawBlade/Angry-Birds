@@ -23,11 +23,13 @@ class Box:
         body.position = self.pos
 
         box = pymunk.Poly.create_box(body, self.size, radius=2)
+        box.friction = 0.3
 
         space.add(body, box)
         
         return body
 
+    # Gemini did the masking for the boxes.
     def mask(self, screen, body):
         # Render the image centered on the physics body
         x, y = body.position
