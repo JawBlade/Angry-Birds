@@ -28,6 +28,11 @@ box_1 = box_1_body.create(space)
 box_2_body = Box((40, 100), (1000, 517), image_path="images/box.jpeg")
 box_2 = box_2_body.create(space)
 
+boxes = [
+    [box_1_body, box_1],
+    [box_2_body, box_2]
+]
+
 # Adds Floor
 floor_body = space.static_body
 floor_body.position = (0, 567)
@@ -40,11 +45,12 @@ red = red_body.create(space)
 
 
 # Adds Images
-background_image = image('images/back.jpg', (width, height))
-sling_shot = image('images/sling_stick.png', (300,300))
-sling_shot2 = image('images/sling_stick2.png', (300,300))
-pig = image("images/pig.webp", (64, 64))
-
+images = [
+    [image('images/back.jpg', (width, height)), (0,0)],
+    [image('images/slingshot/left_stick_sling.png', (300,300)), (75,320)],
+    [image('images/slingshot/right_stick_sling.png', (300,300)), (75, 320)],
+    [image("images/pig.webp", (64, 64)), (1025, 505)]
+    ]
 
 while running:
 
@@ -52,18 +58,14 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    if background_image:
-        screen.blit(background_image, (0,0))
-        screen.blit(sling_shot, (75,320))
-        screen.blit(sling_shot2, (75,320))
-        screen.blit(pig, (1025,505))
-    else:
-        screen.fill("black")
+    for img, pos in images:
+        screen.blit(img, pos)
 
-    space.debug_draw(draw_options)
+    space.debug_draw(draw_options) # We can move this after the images to see the shape of the object behind the image
+
+    for body, box in boxes:
+        body.mask(screen, box)
     
-    box_1_body.mask(screen, box_1)
-    box_2_body.mask(screen, box_2)
     red_body.mask(screen, red)
 
     pygame.display.flip()
