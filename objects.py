@@ -22,7 +22,6 @@ class Box:
 
         body.position = self.pos
 
-        # Create a Box
         box = pymunk.Poly.create_box(body, self.size, radius=2)
 
         space.add(body, box)

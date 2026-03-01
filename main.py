@@ -15,16 +15,13 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 running = True
 
-# Setup Space
 space = pymunk.Space()
 space.gravity = (0,900)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
-# Adds the boxes
 box_1_body = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
 box_1 = box_1_body.create(space)
 
-# create box with its image owned by the Box instance
 box_2_body = Box((40, 100), (1000, 517), image_path="images/box.jpeg")
 box_2 = box_2_body.create(space)
 
