@@ -41,7 +41,8 @@ red = red_body.create(space)
 
 # Adds Images
 background_image = image('images/back.jpg', (width, height))
-sling_shot = image('images/slingshot.png', (300,300))
+sling_shot = image('images/sling_stick.png', (300,300))
+sling_shot2 = image('images/sling_stick2.png', (300,300))
 pig = image("images/pig.webp", (64, 64))
 
 
@@ -54,6 +55,7 @@ while running:
     if background_image:
         screen.blit(background_image, (0,0))
         screen.blit(sling_shot, (75,320))
+        screen.blit(sling_shot2, (75,320))
         screen.blit(pig, (1025,505))
     else:
         screen.fill("black")

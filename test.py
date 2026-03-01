@@ -1,67 +1,76 @@
 import pygame
 import pymunk
-import pymunk.pygame_util
 
-def create_circle(space, pos, radius=20):
-    """Creates a dynamic circle in the physics space."""
-    mass = 1
-    inertia = pymunk.moment_for_circle(mass, 0, radius)
-    body = pymunk.Body(mass, inertia)
-    body.position = pos
+class PhysicsObject:
+    """The Parent: Handles all the Pymunk body/shape setup."""
+    def __init__(self, space, pos, radius, mass, color):
+        self.color = color
+        self.radius = radius
+        
+        # 1. Create Pymunk Physics
+        moment = pymunk.moment_for_circle(mass, 0, radius)
+        self.body = pymunk.Body(mass, moment)
+        self.body.position = pos
+        self.shape = pymunk.Circle(self.body, radius)
+        self.shape.elasticity = 0.5
+        self.shape.friction = 0.5
+        space.add(self.body, self.shape)
+
+    def draw(self, screen):
+        # Convert Pymunk coordinates to Pygame coordinates
+        pos = int(self.body.position.x), int(self.body.position.y)
+        pygame.draw.circle(screen, self.color, pos, int(self.radius))
+
+class Bird(PhysicsObject):
+    """The Child: Inherits everything, but we can add 'Bird' logic."""
+    def __init__(self, space, pos):
+        # Birds are Red and heavy
+        super().__init__(space, pos, radius=15, mass=5, color=(255, 0, 0))
     
-    shape = pymunk.Circle(body, radius)
-    shape.elasticity = 0.8  # Makes it bouncy
-    shape.friction = 0.5
-    
-    space.add(body, shape)
-    return shape
+    def launch(self, impulse):
+        self.body.apply_impulse_at_local_point(impulse)
+
+class Pig(PhysicsObject):
+    """The Child: Inherits everything, but we can add 'Pig' logic."""
+    def __init__(self, space, pos):
+        # Pigs are Green and lighter
+        super().__init__(space, pos, radius=12, mass=2, color=(0, 255, 0))
 
 def create_floor(space):
-    """Creates a static line that objects can land on."""
-    body = space.static_body 
-    floor = pymunk.Segment(body, (0, 550), (800, 550), 5)
-    floor.elasticity = 0.8
-    floor.friction = 0.5
-    space.add(floor)
-    return floor
+    # Static body stays in place forever
+    body = space.static_body
+    shape = pymunk.Segment(body, (0, 380), (800, 380), 10)
+    shape.elasticity = 0.4
+    shape.friction = 1.0
+    space.add(shape)
+    return shape
 
-def main():
-    # --- Initialize Pygame ---
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
-    clock = pygame.time.Clock()
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+# --- Setup Game ---
+pygame.init()
+screen = pygame.display.set_mode((800, 400))
+space = pymunk.Space()
+space.gravity = (0, 900)
 
-    # --- Initialize Pymunk ---
-    space = pymunk.Space()
-    space.gravity = (0, 900)  # Gravity (x, y)
+create_floor(space) # Add the floor to the physics world
+entities = [Bird(space, (150, 100)), Pig(space, (600, 300))]
 
-    # Create the floor
-    create_floor(space)
+# --- Loop ---
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: running = False
 
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            
-            # Create a circle wherever the user clicks
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                create_circle(space, event.pos)
+    space.step(1/60.0)
+    screen.fill((255, 255, 255))
 
-        # --- Physics & Drawing ---
-        screen.fill((255, 255, 255)) # White background
-        
-        # Step the simulation forward (1/60th of a second)
-        space.step(1/60.0)
-        
-        # Pymunk's helper draws everything in the space for us
-        space.debug_draw(draw_options)
-        
-        pygame.display.flip()
-        clock.tick(60)
+    # Draw Floor
+    pygame.draw.line(screen, (50, 50, 50), (0, 380), (800, 380), 10)
 
-    pygame.quit()
+    # Draw Entities
+    for ent in entities:
+        ent.draw(screen)
 
-if __name__ == "__main__":
-    main()
+    pygame.display.flip()
+    pygame.time.Clock().tick(60)
+
+pygame.quit()
