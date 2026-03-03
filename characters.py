@@ -2,11 +2,13 @@ import pymunk
 import pygame
 import math 
 
-class bird:
-    def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None):
+class characters:
+    def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7):
         self.mass = mass
         self.radius = radius
         self.pos = pos
+        self.offset = offset
+        self.scale_mult = scale_mult
         self._cached_img = None 
         self._image_original = None
 
@@ -37,7 +39,7 @@ class bird:
     def mask(self, screen, body):
         x, y = body.position
         
-        diameter = int(self.radius * 2.7)
+        diameter = int(self.radius * self.scale_mult)
 
         if self._image_original:
             if self._cached_img is None:
@@ -49,7 +51,16 @@ class bird:
 
         angle_degrees = math.degrees(-body.angle)
         img_rotated = pygame.transform.rotate(img, angle_degrees)
-        offset = (-7, -5)
+        offset = self.offset
         world_pos = body.local_to_world(offset)
         rect = img_rotated.get_rect(center=(int(world_pos.x), int(world_pos.y)))
         screen.blit(img_rotated, rect)
+
+
+class Bird(characters):
+    def __init__(self, mass, radius, pos, image_surf=None, image_path="images/red_bird.webp"):
+        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7)
+
+class Pig(characters):
+    def __init__(self, mass, radius, pos, image_surf=None, image_path="images/pig.webp"):
+        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(0, -3), scale_mult=2.4)

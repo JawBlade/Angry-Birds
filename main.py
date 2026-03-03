@@ -4,7 +4,7 @@ import pymunk.pygame_util
 import os
 from helpers import image
 from objects import Box
-from birds import bird
+from characters import Pig, Bird
 import math
 
 
@@ -17,6 +17,7 @@ running = True
 
 space = pymunk.Space()
 space.gravity = (0,900)
+space.damping = 0.65
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 box_1_body = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
@@ -38,20 +39,13 @@ floor.friction = 1
 floor.color = (103, 177, 20, 0)
 space.add(floor)
 
-red_body = bird(0.6, 27, (70,501), image_path="images/red_bird.webp")
+red_body = Bird(0.6, 27, (225,415), image_path="images/red_bird.webp")
 red = red_body.create(space)
+#(150,540)
 
-red_bod = bird(0.6, 27, (75,400), image_path="images/red_bird.webp")
-re = red_bod.create(space)
+pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
+pig = pig_b.create(space)
 
-
-# Adds Images
-images = [
-    [image('images/back.jpg', (width, height)), (0,0)],
-    [image('images/slingshot/left_stick_sling.png', (300,300)), (75,320)],
-    [image('images/slingshot/right_stick_sling.png', (300,300)), (75, 320)],
-    [image("images/pig.webp", (64, 64)), (1025, 505)]
-    ]
 
 while running:
 
@@ -59,16 +53,17 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    for img, pos in images:
-        screen.blit(img, pos)
+    screen.blit(image('images/back.jpg', (width, height)), (0,0))
 
     space.debug_draw(draw_options) # We can move this after the images to see the shape of the object behind the image
 
+    screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
+    red_body.mask(screen, red)
+    screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
+    pig_b.mask(screen, pig)
+
     for body, box in boxes:
         body.mask(screen, box)
-    
-    red_body.mask(screen, red)
-    red_bod.mask(screen, re)
 
     pygame.display.flip()
 
@@ -79,3 +74,5 @@ pygame.quit()
 
 # where I got the Bird images
 # https://angrybirdsfanon.fandom.com/wiki/Angry_Birds_Chrome/Classic_artwork/sprites_Collection#Purple_Bird
+
+# apply_impulse_at_local_point()
