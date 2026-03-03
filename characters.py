@@ -24,7 +24,7 @@ class characters:
 
         moment = pymunk.moment_for_circle(mass, 0, radius)
 
-        body = pymunk.Body(mass, moment, body_type= pymunk.Body.STATIC)
+        body = pymunk.Body(mass, moment)
         body.position = self.pos
 
         circle = pymunk.Circle(body, radius)

@@ -47,11 +47,36 @@ pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
 
 
+
+
+
+
+
+
+
+
+
 while running:
+    red.body_type = pymunk.Body.STATIC
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+    button = pygame.mouse.get_pressed()
+
+    if button[0]:     
+        red.body_type = pymunk.Body.DYNAMIC
+        red.position = pygame.mouse.get_pos()
+        red.velocity = (0, 0)
+        red.angular_velocity = 0
+
+
+
+
+    pygame.draw.line(screen, (154, 25, 11), (100, 100), (200, 200), 3)
+
+
 
     screen.blit(image('images/back.jpg', (width, height)), (0,0))
 
