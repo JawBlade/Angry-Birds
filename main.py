@@ -43,20 +43,15 @@ space.add(floor)
 red_body = Bird(0.6, 27, (225,410), image_path="images/red2.webp")
 red = red_body.create(space)
 
+aim_body = space.static_body
+aim = pymunk.Segment(aim_body, (225,410), (red.position[0], red.position[1]), 5)
+aim.elasticity = 0.8
+aim.sensor = True 
+aim.color = (255,0,0,0)
+space.add(aim)
+
 pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 while running:
@@ -74,12 +69,6 @@ while running:
         red.position = pygame.mouse.get_pos()
         red.velocity = (0, 0)
         red.angular_velocity = 0
-
-
-
-
-
-    
 
     screen.blit(image('images/back.jpg', (width, height)), (0,0))
 
