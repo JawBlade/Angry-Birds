@@ -29,6 +29,7 @@ class characters:
 
         circle = pymunk.Circle(body, radius)
         circle.friction = 1
+        circle.color = (213, 39, 42, 255)
         
         space.add(body, circle)
 

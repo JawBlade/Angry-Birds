@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import os
-from helpers import image
+from helpers import image, create_band
 from objects import Box
 from characters import Pig, Bird
 import math
@@ -19,6 +19,7 @@ space = pymunk.Space()
 space.gravity = (0,900)
 space.damping = 0.65
 draw_options = pymunk.pygame_util.DrawOptions(screen)
+
 
 box_1_body = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
 box_1 = box_1_body.create(space)
@@ -39,9 +40,8 @@ floor.friction = 1
 floor.color = (103, 177, 20, 0)
 space.add(floor)
 
-red_body = Bird(0.6, 27, (225,415), image_path="images/red_bird.webp")
+red_body = Bird(0.6, 27, (225,410), image_path="images/red2.webp")
 red = red_body.create(space)
-#(150,540)
 
 pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
@@ -56,8 +56,12 @@ pig = pig_b.create(space)
 
 
 
+
+
+
 while running:
     red.body_type = pymunk.Body.STATIC
+    x, y = red.position
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -74,18 +78,26 @@ while running:
 
 
 
-    pygame.draw.line(screen, (154, 25, 11), (100, 100), (200, 200), 3)
 
-
+    
 
     screen.blit(image('images/back.jpg', (width, height)), (0,0))
 
-    space.debug_draw(draw_options) # We can move this after the images to see the shape of the object behind the image
+    space.debug_draw(draw_options)
+
+    create_band(screen, (257, 413), (x, y))
 
     screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
+    
     red_body.mask(screen, red)
+
+    create_band(screen, (197, 418), (x, y))
+
     screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
+    
     pig_b.mask(screen, pig)
+
+    pygame.draw.line(screen, (0, 0, 0, 0), (225,410), (x,y), 10)
 
     for body, box in boxes:
         body.mask(screen, box)
