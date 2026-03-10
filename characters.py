@@ -51,6 +51,8 @@ class characters:
             pygame.draw.circle(img, (255, 0, 0), (self.radius, self.radius), self.radius)
 
         angle_degrees = math.degrees(-body.angle)
+        if math.isnan(angle_degrees):
+            angle_degrees = 0
         img_rotated = pygame.transform.rotate(img, angle_degrees)
         offset = self.offset
         world_pos = body.local_to_world(offset)
@@ -59,7 +61,7 @@ class characters:
 
 
 class Bird(characters):
-    def __init__(self, mass, radius, pos, image_surf=None, image_path="images/red_bird.webp"):
+    def __init__(self, mass, radius, pos, image_surf=None, image_path="images/red2webp"):
         super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7)
 
 class Pig(characters):

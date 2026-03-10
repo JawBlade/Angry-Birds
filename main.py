@@ -60,6 +60,7 @@ while running:
     red.body_type = pymunk.Body.STATIC
     x, y = red.position
 
+    # Calculate where to place the end of the band on the bird
     dx = x - 225 
     dy = y - 410 
     angle_to_bird = math.atan2(dy, dx)
@@ -78,18 +79,21 @@ while running:
         red.position = pygame.mouse.get_pos()
         red.velocity = (0, 0)
         red.angular_velocity = 0
+        red.angle = 0
 
     screen.blit(image('images/back.jpg', (width, height)), (0,0))
 
     space.debug_draw(draw_options)
 
-    create_band(screen, band, (257, 413), attach_point)
+    if button[0]:
+        create_band(screen, band, (257, 413), attach_point)
 
     screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
     
     red_body.mask(screen, red)
 
-    create_band(screen, band, (197, 418), attach_point)
+    if button[0]:
+        create_band(screen, band, (197, 418), attach_point)
 
     screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
     
