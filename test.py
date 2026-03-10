@@ -1,57 +1,72 @@
 import pygame
-import pymunk
+import math
 
 # --- Setup ---
 pygame.init()
-screen = pygame.display.set_mode((600, 400))
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
-space = pymunk.Space()
-space.gravity = (0, 900)
 
-# 1. THE FLOOR (Category 1)
-# We want everything to hit the floor.
-floor_body = space.static_body
-floor_shape = pymunk.Segment(floor_body, (0, 380), (600, 380), 5)
-floor_shape.filter = pymunk.ShapeFilter(categories=0b1) # Category 1
-space.add(floor_shape)
+# --- Assets ---
+band_img = pygame.Surface((10, 20), pygame.SRCALPHA)
+band_img.fill((200, 50, 50))
 
-# 2. THE BALL (Category 2)
-# We want the ball to hit the floor (Category 1)
-ball_body = pymunk.Body(1, 100)
-ball_body.position = (300, 50)
-ball_shape = pymunk.Circle(ball_body, 20)
-# Mask=0b1 means "Only collide with Category 1"
-ball_shape.filter = pymunk.ShapeFilter(categories=0b10, mask=0b1) 
-space.add(ball_body, ball_shape)
+def draw_stretchy_band(surface, base_img, start_pos, end_pos):
+    x1, y1 = start_pos
+    x2, y2 = end_pos
+    dx, dy = x2 - x1, y2 - y1
+    dist = math.hypot(dx, dy)
+    angle_rad = math.atan2(dy, dx)
+    
+    if dist > 1:
+        stretched = pygame.transform.scale(base_img, (int(dist), 20))
+        rotated = pygame.transform.rotate(stretched, math.degrees(-angle_rad))
+        rect = rotated.get_rect(center=((x1 + x2) / 2, (y1 + y2) / 2))
+        surface.blit(rotated, rect)
+        
+        # Black border
+        perp = angle_rad + math.pi/2
+        off_x, off_y = math.cos(perp) * 10, math.sin(perp) * 10
+        pts = [(x1+off_x, y1+off_y), (x2+off_x, y2+off_y), (x2-off_x, y2-off_y), (x1-off_x, y1-off_y)]
+        pygame.draw.polygon(surface, (0, 0, 0), pts, 2)
 
-# 3. THE GHOST BOX (Category 4)
-# We make this a SENSOR so it doesn't affect the ball physically
-ghost_body = pymunk.Body(body_type=pymunk.Body.STATIC)
-ghost_body.position = (300, 200)
-ghost_shape = pymunk.Poly.create_box(ghost_body, (100, 50))
-ghost_shape.sensor = True  # <--- THIS makes it not affect others
-space.add(ghost_body, ghost_shape)
-
-# --- Main Loop ---
+# --- Main Logic ---
+anchor_left = (350, 350)
+anchor_right = (450, 350)
+circle_radius = 35
 running = True
+
 while running:
+    screen.fill((50, 50, 50))
+    mouse_pos = pygame.mouse.get_pos()
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    space.step(1/60.0)
-    screen.fill((240, 240, 240)) # Light Gray background
+    # 1. Calculate the angle from the slingshot to the circle
+    center_sling = (400, 350)
+    dx = mouse_pos[0] - center_sling[0]
+    dy = mouse_pos[1] - center_sling[1]
+    angle_to_circle = math.atan2(dy, dx)
 
-    # --- Draw the Floor ---
-    pygame.draw.line(screen, (34, 139, 34), (0, 380), (600, 380), 5)
+    # 2. THE FLIP: Add the radius instead of subtracting it
+    # This pushes the attachment point to the OPPOSITE side (the front)
+    front_x = mouse_pos[0] + math.cos(angle_to_circle) * circle_radius
+    front_y = mouse_pos[1] + math.sin(angle_to_circle) * circle_radius
+    attach_point = (front_x, front_y)
 
-    # --- Draw the Ghost Box (Blue) ---
-    # Since it's a sensor, the ball will pass through it!
-    pygame.draw.rect(screen, (0, 100, 255, 100), (250, 175, 100, 50), 2)
+    # 3. DRAWING ORDER (Layers)
+    
+    # Layer 1: Back Band (starts from right anchor)
+    draw_stretchy_band(screen, band_img, anchor_right, attach_point)
 
-    # --- Draw the Ball (Red) ---
-    pos = ball_body.position
-    pygame.draw.circle(screen, (200, 50, 50), (int(pos.x), int(pos.y)), 20)
+    # Layer 2: The Circle (Drawing this in the middle makes the bands look like they wrap)
+    pygame.draw.circle(screen, (200, 50, 50), mouse_pos, circle_radius)
+    pygame.draw.circle(screen, (0, 0, 0), mouse_pos, circle_radius, 3)
+
+    # Layer 3: Front Band (starts from left anchor)
+    draw_stretchy_band(screen, band_img, anchor_left, attach_point)
 
     pygame.display.flip()
     clock.tick(60)

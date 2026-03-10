@@ -18,12 +18,40 @@ def calc(p1, p2):
 def calc_angle(p1, p2):
     return math.atan2(p2[1] - p1[1], p2[0] - p1[0])
 
-def create_band(screen, start : tuple, end : tuple):
 
-    x, y = start
+# Gemini did this
+def create_band(screen, img, start_pos, end_pos):
+
+    x1, y1 = start_pos
+    x2, y2 = end_pos
+
+    dx = x2 - x1
+    dy = y2 - y1
+    dist = math.hypot(dx, dy)
     
-    ex, ey = end
+    angle_rad = math.atan2(dy, dx)
+    angle_deg = math.degrees(-angle_rad)
 
-    pygame.draw.line(screen, (154, 25, 11), (x, y), (ex - 33, ey + 10), 20)
-    pygame.draw.line(screen, (0,0,0), (x, y - 11), (ex - 33, ey), 3)
-    pygame.draw.line(screen, (0,0,0), (x, y + 9), (ex - 33, ey + 20), 3)
+    if dist > 1:
+        stretched_img = pygame.transform.scale(img, (int(dist), 20))
+        
+        rotated_img = pygame.transform.rotate(stretched_img, angle_deg)
+        
+        midpoint = ((x1 + x2) / 2, (y1 + y2) / 2)
+        rect = rotated_img.get_rect(center=midpoint)
+        screen.blit(rotated_img, rect)
+
+        perp_angle = angle_rad + math.pi / 2
+        half_thick = 20 / 2
+        
+        off_x = math.cos(perp_angle) * half_thick
+        off_y = math.sin(perp_angle) * half_thick
+
+        points = [
+            (x1 + off_x, y1 + off_y), 
+            (x2 + off_x, y2 + off_y), 
+            (x2 - off_x, y2 - off_y), 
+            (x1 - off_x, y1 - off_y) 
+        ]
+        
+        pygame.draw.polygon(screen, (0, 0, 0), points, 2)

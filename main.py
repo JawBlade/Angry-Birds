@@ -15,6 +15,9 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 running = True
 
+band = pygame.Surface((10, 20), pygame.SRCALPHA)
+band.fill((200, 50, 50))
+
 space = pymunk.Space()
 space.gravity = (0,900)
 space.damping = 0.65
@@ -53,10 +56,16 @@ space.add(aim)
 pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
 
-
 while running:
     red.body_type = pymunk.Body.STATIC
     x, y = red.position
+
+    dx = x - 225 
+    dy = y - 410 
+    angle_to_bird = math.atan2(dy, dx)
+    front_x = x + math.cos(angle_to_bird) * 36
+    front_y = y + math.sin(angle_to_bird) * 36
+    attach_point = (front_x, front_y) 
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -74,19 +83,17 @@ while running:
 
     space.debug_draw(draw_options)
 
-    create_band(screen, (257, 413), (x, y))
+    create_band(screen, band, (257, 413), attach_point)
 
     screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
     
     red_body.mask(screen, red)
 
-    create_band(screen, (197, 418), (x, y))
+    create_band(screen, band, (197, 418), attach_point)
 
     screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
     
     pig_b.mask(screen, pig)
-
-    pygame.draw.line(screen, (0, 0, 0, 0), (225,410), (x,y), 10)
 
     for body, box in boxes:
         body.mask(screen, box)
