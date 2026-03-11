@@ -16,7 +16,7 @@ clock = pygame.time.Clock()
 running = True
 
 band = pygame.Surface((10, 20), pygame.SRCALPHA)
-band.fill((200, 50, 50))
+band.fill((159, 26, 13))
 
 space = pymunk.Space()
 space.gravity = (0,900)
