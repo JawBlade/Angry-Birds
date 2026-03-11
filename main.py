@@ -7,6 +7,7 @@ from objects import Box
 from characters import Pig, Bird
 import math
 
+pygame.display.set_caption('Knock-Off Angry Birds')
 
 width, height = (1280, 720)
 
