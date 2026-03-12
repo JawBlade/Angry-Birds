@@ -1,44 +1,30 @@
 import pygame
 
-# --- Configuration ---
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
-FPS = 60
-CAPTION = 'My Pygame Game'
-
-# --- Initialization ---
+# Initialize Pygame
 pygame.init()
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption(CAPTION)
-clock = pygame.time.Clock()
+screen = pygame.display.set_mode((400, 400))
 
-visible = 1
+# 1. Define the invisible clickable area
+snap_boundary = pygame.draw.circle(screen, (255,255,255), (200,200), 100, 0) # x, y, width, height
+is_hidden = True
 
-# --- Main Game Loop ---
 running = True
 while running:
-    # 1. Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        # Add other event handling (e.g., keyboard/mouse input) here
+        
+        # 2. Check for the click
+        if event.type == pygame.MOUSEBUTTONUP:
+            if snap_boundary.collidepoint(event.pos):
+                print("You found the secret button!")
+                is_hidden = False # Reveal it once clicked
 
-    # 2. Game logic and updates
-    # Add game object updates here
+    screen.fill((30, 30, 30)) # Dark background
 
-    # 3. Drawing
-    if visible == 2:
-        circle = pygame.draw.circle(screen, (255,255,255), (200,200), 100, 0)
-                                    
-    screen.fill((0, 0, 0)) # Fill the screen with black (RGB)
+    # 3. Only draw if it's NOT hidden
+    if not is_hidden:
+        pygame.draw.circle(screen, (255,255,255), (200,200), 100, 0)
+        
 
-    # Add drawing commands for game objects here
-
-    # 4. Update the display
-    pygame.display.flip() # or pygame.display.update()
-
-    # 5. Cap the frame rate
-    clock.tick(FPS)
-
-# --- Quit Pygame ---
-pygame.quit()
+    pygame.display.flip()

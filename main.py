@@ -7,7 +7,7 @@ from objects import Box
 from characters import Pig, Bird
 import math
 
-pygame.display.set_caption('Knock-Off Angry Birds')
+pygame.display.set_caption('Knoc-Off Angry Birds')
 
 width, height = (1280, 720)
 
@@ -57,6 +57,15 @@ space.add(aim)
 pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
 
+
+
+snap_boundary = pygame.draw.circle(screen, (255,255,255), (200,200), 100, 0) # x, y, width, height
+released = False
+
+
+
+
+
 while running:
     red.body_type = pymunk.Body.STATIC
     x, y = red.position
@@ -72,6 +81,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.MOUSEBUTTONUP: 
+            released = True
+
 
     button = pygame.mouse.get_pressed()
 
@@ -105,6 +118,16 @@ while running:
 
     pygame.display.flip()
 
+
+    if released and pygame.sprite.collide_circle(red_body, snap_boundary):
+        red.position = (225,410)
+
+
+
+
+
+
+
     clock.tick(60)
     space.step(1.0 / 60.0)
 
@@ -114,3 +137,5 @@ pygame.quit()
 # https://angrybirdsfanon.fandom.com/wiki/Angry_Birds_Chrome/Classic_artwork/sprites_Collection#Purple_Bird
 
 # apply_impulse_at_local_point()
+
+# the main error when it colides with something and crashes is 
