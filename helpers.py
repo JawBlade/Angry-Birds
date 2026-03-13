@@ -18,6 +18,21 @@ def calc(p1, p2):
 def calc_angle(p1, p2):
     return math.atan2(p2[1] - p1[1], p2[0] - p1[0])
 
+def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
+    SNAP_RADIUS = 60
+    if released:
+        bird_x, bird_y = red.position
+        dx = bird_x - SLINGSHOT_POS[0]
+        dy = bird_y - SLINGSHOT_POS[1]
+        distance = math.sqrt(dx**2 + dy**2)
+
+        if distance < SNAP_RADIUS:
+            # We teleport the physics body
+            red.position = SLINGSHOT_POS
+            red.velocity = (0,0)
+            red.angular_velocity = 0
+            return False # Tell the main loop we are no longer "released"
+    return released
 
 # Gemini did this
 def create_band(screen, img, start_pos, end_pos):

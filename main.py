@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import os
-from helpers import image, create_band
+from helpers import image, create_band, snap_check
 from objects import Box
 from characters import Pig, Bird
 import math
@@ -57,13 +57,7 @@ space.add(aim)
 pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
 
-
-
-snap_boundary = pygame.draw.circle(screen, (255,255,255), (200,200), 100, 0) # x, y, width, height
-released = False
-
-
-
+released=False
 
 
 while running:
@@ -116,20 +110,11 @@ while running:
     for body, box in boxes:
         body.mask(screen, box)
 
-    pygame.display.flip()
-
-
-    if released and pygame.sprite.collide_circle(red_body, snap_boundary):
-        red.position = (225,410)
-
-
-
-
-
-
-
-    clock.tick(60)
+    snap_check(red, released)
     space.step(1.0 / 60.0)
+
+    pygame.display.flip()
+    clock.tick(60)
 
 pygame.quit()
 
