@@ -31,8 +31,23 @@ def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
             red.position = SLINGSHOT_POS
             red.velocity = (0,0)
             red.angular_velocity = 0
-            return False # Tell the main loop we are no longer "released"
+            return False
     return released
+
+def grab(mouse_pos, red, released):
+    SNAP_RADIUS = 40
+    if not released:
+        bird_x, bird_y = red.position
+        dx = bird_x - mouse_pos[0]
+        dy = bird_y - mouse_pos[1]
+        distance = math.sqrt(dx**2 + dy**2)
+
+        if distance < SNAP_RADIUS:
+            red.position = pygame.mouse.get_pos()
+            red.velocity = (0,0)
+            red.angular_velocity = 0
+            return True
+
 
 # Gemini did this
 def create_band(screen, img, start_pos, end_pos):

@@ -2,12 +2,12 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import os
-from helpers import image, create_band, snap_check
+from helpers import image, create_band, snap_check, grab
 from objects import Box
 from characters import Pig, Bird
 import math
 
-pygame.display.set_caption('Knoc-Off Angry Birds')
+pygame.display.set_caption('Knock-Off Angry Birds')
 
 width, height = (1280, 720)
 
@@ -59,7 +59,6 @@ pig = pig_b.create(space)
 
 released=False
 
-
 while running:
     red.body_type = pymunk.Body.STATIC
 
@@ -72,7 +71,7 @@ while running:
     button = pygame.mouse.get_pressed()
     if button[0]:     
         red.body_type = pymunk.Body.DYNAMIC
-        red.position = pygame.mouse.get_pos()
+        grab(pygame.mouse.get_pos(), red, released)
         red.velocity = (0, 0)
         red.angular_velocity = 0
         red.angle = 0
@@ -88,13 +87,13 @@ while running:
     angle_to_bird = math.atan2(dy, dx)
     attach_point = (x + math.cos(angle_to_bird) * 36, y + math.sin(angle_to_bird) * 36)
 
-    if button[0]:
+    if button[0] and grab(pygame.mouse.get_pos(), red, released):
         create_band(screen, band, (257, 413), attach_point)
 
     screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
     red_body.mask(screen, red) 
 
-    if button[0]:
+    if button[0] and grab(pygame.mouse.get_pos(), red, released):
         create_band(screen, band, (197, 418), attach_point)
 
     screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
