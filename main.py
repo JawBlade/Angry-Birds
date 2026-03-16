@@ -58,24 +58,28 @@ pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
 
 released=False
+dragging = False
 
 while running:
-    red.body_type = pymunk.Body.STATIC
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.MOUSEBUTTONUP: 
             released = True
+        if event.type == pygame.MOUSEBUTTONDOWN:  
+            if grab(pygame.mouse.get_pos(), red, released):
+                is_dragging = True
 
     button = pygame.mouse.get_pressed()
-    if button[0]:     
-        red.body_type = pymunk.Body.DYNAMIC
+    if dragging:     
+        red.body_type = pymunk.Body.STATIC
         grab(pygame.mouse.get_pos(), red, released)
         red.velocity = (0, 0)
         red.angular_velocity = 0
         red.angle = 0
         released = False 
+    elif not dragging:
+        red.body_type = pymunk.Body.STATIC
 
     released = snap_check(red, released) 
     space.step(1.0 / 60.0)

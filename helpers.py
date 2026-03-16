@@ -47,6 +47,7 @@ def grab(mouse_pos, red, released):
             red.velocity = (0,0)
             red.angular_velocity = 0
             return True
+    return False
 
 
 # Gemini did this
