@@ -12,7 +12,7 @@ def image(path : str, size : tuple, alpha=True):
 
     return img
 
-def calc(p1, p2):
+def distance(p1, p2):
     return math.sqrt((p2[1] - p1[1]) **2 + (p2[0] - p1[0]) **2)
 
 def calc_angle(p1, p2):
@@ -21,13 +21,9 @@ def calc_angle(p1, p2):
 def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
     SNAP_RADIUS = 60
     if released:
-        bird_x, bird_y = red.position
-        dx = bird_x - SLINGSHOT_POS[0]
-        dy = bird_y - SLINGSHOT_POS[1]
-        distance = math.sqrt(dx**2 + dy**2)
+        dist = distance(red.position, SLINGSHOT_POS)
 
-        if distance < SNAP_RADIUS:
-            # We teleport the physics body
+        if dist < SNAP_RADIUS:
             red.position = SLINGSHOT_POS
             red.velocity = (0,0)
             red.angular_velocity = 0
