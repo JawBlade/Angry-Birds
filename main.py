@@ -64,22 +64,35 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONUP: 
-            released = True
-        if event.type == pygame.MOUSEBUTTONDOWN:  
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+
+            bird_x, bird_y = red.position
+            mouse_x, mouse_y = event.pos
+            dist = math.hypot(bird_x - mouse_x, bird_y - mouse_y) 
+            if dist < 40:
+                dragging = True
+                released = False
+
             if grab(pygame.mouse.get_pos(), red, released):
                 is_dragging = True
 
+        if event.type == pygame.MOUSEBUTTONUP: 
+            released = True
+            dragging = False
+
     button = pygame.mouse.get_pressed()
     if dragging:     
-        red.body_type = pymunk.Body.STATIC
-        grab(pygame.mouse.get_pos(), red, released)
+        red.body_type = pymunk.Body.KINEMATIC
+        red.position = pygame.mouse.get_pos()
         red.velocity = (0, 0)
         red.angular_velocity = 0
         red.angle = 0
-        released = False 
-    elif not dragging:
-        red.body_type = pymunk.Body.STATIC
+    else:
+        if not released:
+          red.body_type = pymunk.Body.STATIC
+        else:
+            red.body_type = pymunk.Body.DYNAMIC
 
     released = snap_check(red, released) 
     space.step(1.0 / 60.0)
