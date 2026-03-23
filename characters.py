@@ -56,7 +56,12 @@ class characters:
         img_rotated = pygame.transform.rotate(img, angle_degrees)
         offset = self.offset
         world_pos = body.local_to_world(offset)
-        rect = img_rotated.get_rect(center=(int(world_pos.x), int(world_pos.y)))
+        x = world_pos.x
+        y = world_pos.y
+        if math.isnan(x) or math.isnan(y):
+            return
+
+        rect = img_rotated.get_rect(center=(x, y))
         screen.blit(img_rotated, rect)
 
 

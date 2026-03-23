@@ -7,6 +7,8 @@ from objects import Box
 from characters import Pig, Bird
 import math
 
+SLING_POS     = (225, 410)
+
 pygame.display.set_caption('Knock-Off Angry Birds')
 
 width, height = (1280, 720)
@@ -78,21 +80,47 @@ while running:
                 is_dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP: 
-            released = True
-            dragging = False
+            if dragging:
+                dragging = False
+                released = True
+                px, py = red.position
+                offset_x = 225 - px
+                offset_y = 410 - py
+                POWER = 12
+                red.body_type = pymunk.Body.DYNAMIC
+                red.velocity = (offset_x * POWER, offset_y * POWER)
 
     button = pygame.mouse.get_pressed()
-    if dragging:     
-        red.body_type = pymunk.Body.KINEMATIC
-        red.position = pygame.mouse.get_pos()
-        red.velocity = (0, 0)
-        red.angular_velocity = 0
-        red.angle = 0
-    else:
-        if not released:
-          red.body_type = pymunk.Body.STATIC
-        else:
-            red.body_type = pymunk.Body.DYNAMIC
+    if dragging:
+            # Move bird with mouse, clamped to pull radius
+            mx, my = pygame.mouse.get_pos()
+            dx, dy = mx - SLING_POS[0], my - SLING_POS[1]
+            dist = math.hypot(dx, dy)
+            if dist > 90:
+                dx, dy = dx * 90/dist, dy * 90/dist
+                # Set position directly — no velocity zeroing
+                red.position = (SLING_POS[0] + dx, SLING_POS[1] + dy)
+                red.velocity = (0, 0)   # keep still while held
+                red.angular_velocity = 0
+                last_pull_pos = red.position
+
+            elif not released:
+                # Sitting on sling untouched
+                red.position = SLING_POS
+                red.velocity = (0, 0)
+
+    MAX_VEL = 3000
+    for body in space.bodies:
+        if body.body_type == pymunk.Body.DYNAMIC:
+            vx, vy = body.velocity
+            if math.isnan(vx) or math.isnan(vy):
+                body.velocity = (0, 0)
+                body.angular_velocity = 0
+                body.position = (body.position.x or 0, body.position.y or 0)
+            else:
+                speed = body.velocity.length
+                if speed > MAX_VEL:
+                    body.velocity = body.velocity * (MAX_VEL / speed)
 
     released = snap_check(red, released) 
     space.step(1.0 / 60.0)
@@ -121,10 +149,3 @@ while running:
 
     pygame.display.flip()
     clock.tick(60)
-
-# where I got the Bird images
-# https://angrybirdsfanon.fandom.com/wiki/Angry_Birds_Chrome/Classic_artwork/sprites_Collection#Purple_Bird
-
-# apply_impulse_at_local_point()
-
-# the main error when it colides with something and crashes is 

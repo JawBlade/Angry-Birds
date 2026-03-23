@@ -20,13 +20,12 @@ def calc_angle(p1, p2):
 
 def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
     SNAP_RADIUS = 60
-    if released:
+    if released and red.velocity.length < 5:
         dist = distance(red.position, SLINGSHOT_POS)
 
         if dist < SNAP_RADIUS:
             red.position = SLINGSHOT_POS
             red.velocity = (0,0)
-            red.angular_velocity = 0
             return False
     return released
 

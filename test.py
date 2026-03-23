@@ -24,7 +24,6 @@ band_surf.fill((159, 26, 13))
 def build_level(space):
     boxes, pigs = [], []
 
-    # Structure 1: two pillars + beam + pig on top
     for pos in [(980, 511), (1060, 511)]:
         b = Box((30, 110), pos, image_path="images/box.jpeg")
         boxes.append([b, b.create(space)])
@@ -33,14 +32,12 @@ def build_level(space):
     p = Pig(1, 27, (1020, 418), image_path="images/pig.webp")
     pigs.append([p, p.create(space)])
 
-    # Structure 2: tall tower + pig on top
     for pos in [(1170, 527), (1170, 447)]:
         b = Box((38, 80), pos, image_path="images/box.jpeg")
         boxes.append([b, b.create(space)])
     p = Pig(1, 27, (1170, 400), image_path="images/pig.webp")
     pigs.append([p, p.create(space)])
 
-    # Lone ground pig
     p = Pig(1, 27, (870, 538), image_path="images/pig.webp")
     pigs.append([p, p.create(space)])
 
@@ -73,7 +70,7 @@ def draw_overlay(text, sub, color):
 def spawn_bird(space):
     bd = Bird(0.6, 27, SLING_POS, image_path="images/red2.webp")
     b  = bd.create(space)
-    b.body_type = pymunk.Body.KINEMATIC
+    b.body_type = pymunk.Body.DYNAMIC
     b.velocity  = (0, 0)
     return bd, b
 
@@ -100,6 +97,9 @@ def run_level():
     dead_pigs  = set()
     rest_timer = 0
 
+    # track last pull position so we can compute launch velocity
+    last_pull_pos = SLING_POS
+
     running = True
     while running:
         clock.tick(60)
@@ -125,31 +125,39 @@ def run_level():
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if dragging:
-                    released = True
                     dragging = False
+                    released = True
+                    # Compute pull offset from sling center and launch
+                    px, py = red.position
+                    offset_x = SLING_POS[0] - px
+                    offset_y = SLING_POS[1] - py
+                    POWER = 12
+                    red.velocity = (offset_x * POWER, offset_y * POWER)
 
-        # ── bird control — identical logic to main.py ─────────────────────────
         if state == "playing":
             if dragging:
-                red.body_type = pymunk.Body.KINEMATIC
+                # Move bird with mouse, clamped to pull radius
                 mx, my = pygame.mouse.get_pos()
                 dx, dy = mx - SLING_POS[0], my - SLING_POS[1]
                 dist = math.hypot(dx, dy)
                 if dist > 90:
                     dx, dy = dx * 90/dist, dy * 90/dist
+                # Set position directly — no velocity zeroing
                 red.position = (SLING_POS[0] + dx, SLING_POS[1] + dy)
-                red.velocity = (0, 0)
+                red.velocity = (0, 0)   # keep still while held
                 red.angular_velocity = 0
-            elif not released:
-                red.body_type = pymunk.Body.KINEMATIC
-                red.velocity  = (0, 0)
-            else:
-                red.body_type = pymunk.Body.DYNAMIC
+                last_pull_pos = red.position
 
+            elif not released:
+                # Sitting on sling untouched
+                red.position = SLING_POS
+                red.velocity = (0, 0)
+
+            # snap back if it barely moved
             released = snap_check(red, released, SLING_POS)
 
-            # pig kill: bird must be fast and close
-            if released and red.body_type == pymunk.Body.DYNAMIC:
+            # pig kill check
+            if released:
                 bx2, by2 = red.position
                 bird_spd = red.velocity.length
                 for pig_obj, pig_body in pigs:
@@ -160,15 +168,15 @@ def run_level():
                         dead_pigs.add(id(pig_body))
                         score += 500
 
-            # remove dead pigs
+            # remove dead pigs from space
             for pig_obj, pig_body in pigs:
                 if id(pig_body) in dead_pigs:
                     for sh in list(pig_body.shapes):
                         if sh in space.shapes: space.remove(sh)
                     if pig_body in space.bodies: space.remove(pig_body)
 
-            # advance to next bird after current one rests / leaves screen
-            if released and red.body_type == pymunk.Body.DYNAMIC:
+            # advance to next bird once current one settles
+            if released:
                 bx2, by2 = red.position
                 off = bx2 > WIDTH + 100 or bx2 < -100 or by2 > FLOOR_Y + 150
                 if off or red.velocity.length < 6:
@@ -190,6 +198,7 @@ def run_level():
                         bird_obj, red = spawn_bird(space)
                         birds_left -= 1
                         released = dragging = False
+                        last_pull_pos = SLING_POS
                     else:
                         state = "lose"
 
@@ -204,19 +213,18 @@ def run_level():
         # ── draw ──────────────────────────────────────────────────────────────
         screen.blit(image('images/back.jpg', (WIDTH, HEIGHT), alpha=False), (0, 0))
 
-        # trajectory dots while pulling
+        # trajectory preview
         if dragging:
             bx2, by2 = red.position
-            vx = (SLING_POS[0] - bx2) * 10
-            vy = (SLING_POS[1] - by2) * 10
-            x, y = bx2, by2
-            for i in range(35):
+            vx = (SLING_POS[0] - bx2) * 12
+            vy = (SLING_POS[1] - by2) * 12
+            x, y = float(bx2), float(by2)
+            for i in range(40):
                 x += vx/60; y += vy/60; vy += 900/60
                 if y > FLOOR_Y: break
-                r = max(2, 5 - i//6)
+                r = max(2, 5 - i//7)
                 pygame.draw.circle(screen, (255, 255, 200), (int(x), int(y)), r)
 
-        # bands + bird + sticks  (same draw order as main.py)
         bx2, by2  = red.position
         ang       = math.atan2(by2 - SLING_POS[1], bx2 - SLING_POS[0])
         attach_pt = (bx2 + math.cos(ang)*36, by2 + math.sin(ang)*36)
@@ -233,7 +241,6 @@ def run_level():
 
         screen.blit(image('images/slingshot/left_stick_sling.png', (300, 300)), (75, 320))
 
-        # waiting bird icons
         for i in range(min(birds_left, 3)):
             qx = 130 - i * 30
             pygame.draw.circle(screen, (220, 50, 50), (qx, 435), 13)
