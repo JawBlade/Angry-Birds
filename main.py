@@ -61,6 +61,7 @@ pig = pig_b.create(space)
 
 released=False
 dragging = False
+idle = True
 
 while running:
     for event in pygame.event.get():
@@ -92,22 +93,18 @@ while running:
 
     button = pygame.mouse.get_pressed()
     if dragging:
+            idle = False
             # Move bird with mouse, clamped to pull radius
-            mx, my = pygame.mouse.get_pos()
-            dx, dy = mx - SLING_POS[0], my - SLING_POS[1]
-            dist = math.hypot(dx, dy)
-            if dist > 90:
-                dx, dy = dx * 90/dist, dy * 90/dist
-                # Set position directly — no velocity zeroing
-                red.position = (SLING_POS[0] + dx, SLING_POS[1] + dy)
-                red.velocity = (0, 0)   # keep still while held
-                red.angular_velocity = 0
-                last_pull_pos = red.position
-
-            elif not released:
-                # Sitting on sling untouched
+            #mx, my = pygame.mouse.get_pos()
+            #dx, dy = mx - SLING_POS[0], my - SLING_POS[1]
+            #dist = math.hypot(dx, dy)
+            if not released:
                 red.position = SLING_POS
                 red.velocity = (0, 0)
+    elif idle == True:
+            red.position = SLING_POS
+            red.velocity = (0, 0)
+
 
     MAX_VEL = 3000
     for body in space.bodies:
