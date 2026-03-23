@@ -29,9 +29,9 @@ def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
             return False
     return released
 
-def grab(mouse_pos, red, released):
+def grab(mouse_pos, red, released, launch : bool):
     SNAP_RADIUS = 40
-    if not released:
+    if not released and launch:
         bird_x, bird_y = red.position
         dx = bird_x - mouse_pos[0]
         dy = bird_y - mouse_pos[1]

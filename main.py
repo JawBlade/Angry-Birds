@@ -62,6 +62,7 @@ pig = pig_b.create(space)
 released=False
 dragging = False
 idle = True
+launch = True
 
 while running:
     for event in pygame.event.get():
@@ -77,7 +78,7 @@ while running:
                 dragging = True
                 released = False
 
-            if grab(pygame.mouse.get_pos(), red, released):
+            if grab(pygame.mouse.get_pos(), red, released, launch):
                 is_dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP: 
@@ -94,16 +95,11 @@ while running:
     button = pygame.mouse.get_pressed()
     if dragging:
             idle = False
-            # Move bird with mouse, clamped to pull radius
-            #mx, my = pygame.mouse.get_pos()
-            #dx, dy = mx - SLING_POS[0], my - SLING_POS[1]
-            #dist = math.hypot(dx, dy)
-            if not released:
-                red.position = SLING_POS
-                red.velocity = (0, 0)
     elif idle == True:
             red.position = SLING_POS
             red.velocity = (0, 0)
+    elif released == True:
+        launch = False
 
 
     MAX_VEL = 3000
@@ -129,13 +125,13 @@ while running:
     angle_to_bird = math.atan2(dy, dx)
     attach_point = (x + math.cos(angle_to_bird) * 36, y + math.sin(angle_to_bird) * 36)
 
-    if button[0] and grab(pygame.mouse.get_pos(), red, released):
+    if button[0] and grab(pygame.mouse.get_pos(), red, released, launch):
         create_band(screen, band, (257, 413), attach_point)
 
     screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
     red_body.mask(screen, red) 
 
-    if button[0] and grab(pygame.mouse.get_pos(), red, released):
+    if button[0] and grab(pygame.mouse.get_pos(), red, released, launch):
         create_band(screen, band, (197, 418), attach_point)
 
     screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))

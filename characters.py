@@ -59,7 +59,7 @@ class characters:
         x = world_pos.x
         y = world_pos.y
         if math.isnan(x) or math.isnan(y):
-            return
+            return 
 
         rect = img_rotated.get_rect(center=(x, y))
         screen.blit(img_rotated, rect)
