@@ -62,7 +62,7 @@ pig = pig_b.create(space)
 released=False
 dragging = False
 idle = True
-launch = True
+launch = False
 
 while running:
     for event in pygame.event.get():
@@ -74,7 +74,7 @@ while running:
             bird_x, bird_y = red.position
             mouse_x, mouse_y = event.pos
             dist = math.hypot(bird_x - mouse_x, bird_y - mouse_y) 
-            if dist < 40:
+            if dist < 40 and not launch:
                 dragging = True
                 released = False
 
@@ -82,7 +82,7 @@ while running:
                 is_dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP: 
-            if dragging:
+            if dragging and not launch and dragging:
                 dragging = False
                 released = True
                 px, py = red.position
@@ -93,14 +93,16 @@ while running:
                 red.velocity = (offset_x * POWER, offset_y * POWER)
 
     button = pygame.mouse.get_pressed()
+
     if dragging:
             idle = False
     elif idle == True:
             red.position = SLING_POS
             red.velocity = (0, 0)
     elif released == True:
-        launch = False
-
+        launch = True
+    if launch and red.velocity <= (0,0):
+        red.position = (225,410)
 
     MAX_VEL = 3000
     for body in space.bodies:
