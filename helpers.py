@@ -1,6 +1,7 @@
 import pygame 
 import math
 import os
+import pymunk
 
 
 def image(path : str, size : tuple, alpha=True):
@@ -14,7 +15,7 @@ def image(path : str, size : tuple, alpha=True):
     return img
 
 def respawn(red, screen):
-    
+
     pygame.transform.rotate(screen, math.degrees(90))
     red.velocity = (0, 0)
     red.angular_velocity = 0
@@ -23,14 +24,11 @@ def respawn(red, screen):
     
     return False, False, True, False
 
-
 def distance(p1, p2):
     return math.sqrt((p2[1] - p1[1]) **2 + (p2[0] - p1[0]) **2)
 
-def calc_angle(p1, p2):
-    return math.atan2(p2[1] - p1[1], p2[0] - p1[0])
-
-def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
+# Checks if you let go of the bird in a certain radius
+def snap_check(red, released : bool, SLINGSHOT_POS=(225, 410)):
     SNAP_RADIUS = 60
     if released and red.velocity.length < 5:
         dist = distance(red.position, SLINGSHOT_POS)
@@ -41,7 +39,8 @@ def snap_check(red, released, SLINGSHOT_POS=(225, 410)):
             return False
     return released
 
-def grab(mouse_pos, red, released, launch : bool):
+# Checks if you click close enough to the bird
+def grab(mouse_pos : tuple, red, released : bool, launch : bool):
     SNAP_RADIUS = 40
     if not released and not launch:
         bird_x, bird_y = red.position
@@ -56,9 +55,8 @@ def grab(mouse_pos, red, released, launch : bool):
             return True
     return False
 
-
 # Gemini did this
-def create_band(screen, img, start_pos, end_pos):
+def create_band(screen, img, start_pos : tuple, end_pos : tuple):
 
     x1, y1 = start_pos
     x2, y2 = end_pos
@@ -94,8 +92,24 @@ def create_band(screen, img, start_pos, end_pos):
         
         pygame.draw.polygon(screen, (0, 0, 0), points, 2)
 
+
+ # Clause did this
+def clamp_vels(space):
+    MAX_VEL = 3000
+    for body in space.bodies:
+        if body.body_type == pymunk.Body.DYNAMIC:
+            vx, vy = body.velocity
+            if math.isnan(vx) or math.isnan(vy):
+                body.velocity = (0, 0)
+                body.angular_velocity = 0
+            else:
+                speed = body.velocity.length
+                if speed > MAX_VEL:
+                    body.velocity = body.velocity * (MAX_VEL / speed)
+
 from objects import Box
 
-def make_box(size, pos, space, image_path="images/box.jpeg"):
+# Adds all the boxes within the array of boxes in our space/level
+def make_box(size : tuple, pos : tuple, space, image_path="images/box.jpeg"):
     body = Box(size, pos, image_path=image_path)
     return [body, body.create(space)]

@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import os
-from helpers import image, create_band, snap_check, grab, make_box, respawn
+from helpers import image, create_band, snap_check, grab, make_box, respawn, clamp_vels
 from characters import Pig, Bird
 import math
 
@@ -54,7 +54,8 @@ SLING_POS = (225, 410)
 
 while running:
     bird_x, bird_y = red.position
-    
+    mouse_pos = pygame.mouse.get_pos()
+
     # Input
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -69,7 +70,7 @@ while running:
                 dragging = True
                 released = False
 
-            if grab(pygame.mouse.get_pos(), red, released, launch):
+            if grab(mouse_pos, red, released, launch):
                 is_dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP: 
@@ -98,6 +99,8 @@ while running:
         released, dragging, idle, launch = respawn(red, screen)
 
     released = snap_check(red, released) 
+
+    clamp_vels(space)
     space.step(1.0 / 60.0)
     
     dx, dy = bird_x - 225, bird_y - 410 
@@ -107,13 +110,13 @@ while running:
     # Drawing Logic like the visuals: Bakcgroud, bird, pig, Slingshot, and boxes
     screen.blit(image('images/back.jpg', (WIDTH, HEIGHT)), (0,0))
     
-    if button[0] and grab(pygame.mouse.get_pos(), red, released, launch):
+    if button[0] and grab(mouse_pos, red, released, launch):
         create_band(screen, band, (257, 413), attach_point)
 
     screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
     red_body.mask(screen, red) 
 
-    if button[0] and grab(pygame.mouse.get_pos(), red, released, launch):
+    if button[0] and grab(mouse_pos, red, released, launch):
         create_band(screen, band, (197, 418), attach_point)
 
     screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
