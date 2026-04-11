@@ -2,40 +2,28 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import os
-from helpers import image, create_band, snap_check, grab
-from objects import Box
+from helpers import image, create_band, snap_check, grab, make_box, respawn
 from characters import Pig, Bird
 import math
 
-SLING_POS     = (225, 410)
-
+# This is just Boiler Plate
 pygame.display.set_caption('Knock-Off Angry Birds')
 
-width, height = (1280, 720)
-
 pygame.init()
-screen = pygame.display.set_mode((width, height))
-clock = pygame.time.Clock()
-running = True
 
-band = pygame.Surface((10, 20), pygame.SRCALPHA)
-band.fill((159, 26, 13))
+WIDTH, HEIGHT = (1280, 720)
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+clock = pygame.time.Clock()
 
 space = pymunk.Space()
 space.gravity = (0,900)
 space.damping = 0.65
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
-
-box_1_body = Box((40, 100), (1125, 517), image_path="images/box.jpeg")
-box_1 = box_1_body.create(space)
-
-box_2_body = Box((40, 100), (1000, 517), image_path="images/box.jpeg")
-box_2 = box_2_body.create(space)
-
+# Make the different boxes for the level
 boxes = [
-    [box_1_body, box_1],
-    [box_2_body, box_2]
+    make_box((40, 100), (1125, 517), space),
+    make_box((40, 100), (1000, 517), space),
 ]
 
 # Adds Floor
@@ -46,25 +34,28 @@ floor.friction = 1
 floor.color = (103, 177, 20, 0)
 space.add(floor)
 
+# Adds the bird's body to our space
 red_body = Bird(0.6, 27, (225,410), image_path="images/red2.webp")
 red = red_body.create(space)
 
-aim_body = space.static_body
-aim = pymunk.Segment(aim_body, (225,410), (red.position[0], red.position[1]), 5)
-aim.elasticity = 0.8
-aim.sensor = True 
-aim.color = (255,0,0,0)
-space.add(aim)
+# Vars for loop
+band = pygame.Surface((10, 20), pygame.SRCALPHA)
+band.fill((159, 26, 13))
 
 pig_b = Pig(1, 27, (1063,540), image_path="images/pig.webp")
 pig = pig_b.create(space)
 
-released=False
-dragging = False
-idle = True
-launch = False
+running   = True
+released  = False
+dragging  = False
+idle      = True
+launch    = False
+SLING_POS = (225, 410)
 
 while running:
+    bird_x, bird_y = red.position
+    
+    # Input
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -82,7 +73,8 @@ while running:
                 is_dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP: 
-            if dragging and not launch and dragging:
+            # Launching stuff
+            if dragging and not launch:
                 dragging = False
                 released = True
                 px, py = red.position
@@ -94,6 +86,7 @@ while running:
 
     button = pygame.mouse.get_pressed()
 
+    # Logic for different states
     if dragging:
             idle = False
     elif idle == True:
@@ -102,39 +95,18 @@ while running:
     elif released == True:
         launch = True
     if launch and red.velocity.length <= 5:
-        released=False
-        dragging = False
-        idle = True
-        launch = False
-        pygame.transform.rotate(screen, math.degrees(90))
-        red.velocity = (0, 0)
-        red.angular_velocity = 0
-        red.angle = 0
-        red.position = SLING_POS
-
-    MAX_VEL = 3000
-    for body in space.bodies:
-        if body.body_type == pymunk.Body.DYNAMIC:
-            vx, vy = body.velocity
-            if math.isnan(vx) or math.isnan(vy):
-                body.velocity = (0, 0)
-                body.angular_velocity = 0
-                body.position = (body.position.x or 0, body.position.y or 0)
-            else:
-                speed = body.velocity.length
-                if speed > MAX_VEL:
-                    body.velocity = body.velocity * (MAX_VEL / speed)
+        released, dragging, idle, launch = respawn(red, screen)
 
     released = snap_check(red, released) 
     space.step(1.0 / 60.0)
-
-    screen.blit(image('images/back.jpg', (width, height)), (0,0))
     
-    x, y = red.position
-    dx, dy = x - 225, y - 410 
+    dx, dy = bird_x - 225, bird_y - 410 
     angle_to_bird = math.atan2(dy, dx)
-    attach_point = (x + math.cos(angle_to_bird) * 36, y + math.sin(angle_to_bird) * 36)
-
+    attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
+    
+    # Drawing Logic like the visuals: Bakcgroud, bird, pig, Slingshot, and boxes
+    screen.blit(image('images/back.jpg', (WIDTH, HEIGHT)), (0,0))
+    
     if button[0] and grab(pygame.mouse.get_pos(), red, released, launch):
         create_band(screen, band, (257, 413), attach_point)
 

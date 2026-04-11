@@ -2,6 +2,7 @@ import pygame
 import math
 import os
 
+
 def image(path : str, size : tuple, alpha=True):
     if not alpha:    
         img = pygame.image.load(os.path.join(path)).convert()
@@ -11,6 +12,17 @@ def image(path : str, size : tuple, alpha=True):
     img = pygame.transform.scale(img, size)
 
     return img
+
+def respawn(red, screen):
+    
+    pygame.transform.rotate(screen, math.degrees(90))
+    red.velocity = (0, 0)
+    red.angular_velocity = 0
+    red.angle = 0
+    red.position = (225, 410)
+    
+    return False, False, True, False
+
 
 def distance(p1, p2):
     return math.sqrt((p2[1] - p1[1]) **2 + (p2[0] - p1[0]) **2)
@@ -81,3 +93,9 @@ def create_band(screen, img, start_pos, end_pos):
         ]
         
         pygame.draw.polygon(screen, (0, 0, 0), points, 2)
+
+from objects import Box
+
+def make_box(size, pos, space, image_path="images/box.jpeg"):
+    body = Box(size, pos, image_path=image_path)
+    return [body, body.create(space)]
