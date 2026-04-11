@@ -54,6 +54,10 @@ idle      = True
 launch    = False
 SLING_POS = (225, 410)
 
+bg_img = image('images/back.jpg', (WIDTH, HEIGHT))
+sling_r = image('images/slingshot/right_stick_sling.png', (300,300))
+sling_l = image('images/slingshot/left_stick_sling.png', (300,300))
+
 while running:
     bird_x, bird_y = red.position
     mouse_pos = pygame.mouse.get_pos()
@@ -110,18 +114,18 @@ while running:
     attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
     
     # Drawing Logic like the visuals: Bakcgroud, bird, pig, Slingshot, and boxes
-    screen.blit(image('images/back.jpg', (WIDTH, HEIGHT)), (0,0))
+    screen.blit(bg_img, (0, 0))
     
     if button[0] and grab(mouse_pos, red, released, launch):
         create_band(screen, band, (257, 413), attach_point)
-
-    screen.blit(image('images/slingshot/right_stick_sling.png', (300,300)), (75,320))
+            
+    screen.blit(sling_r, (75, 320))
     red_body.mask(screen, red) 
 
     if button[0] and grab(mouse_pos, red, released, launch):
         create_band(screen, band, (197, 418), attach_point)
-
-    screen.blit(image('images/slingshot/left_stick_sling.png', (300,300)), (75, 320))
+            
+    screen.blit(sling_l, (75, 320))
     pig_b.mask(screen, pig)
 
     for body, box in boxes:
