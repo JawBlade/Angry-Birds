@@ -1,6 +1,7 @@
+import math 
 import pymunk
 import pygame
-import math 
+
 
 class characters:
     def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7):

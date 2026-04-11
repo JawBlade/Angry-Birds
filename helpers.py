@@ -1,18 +1,14 @@
-import pygame 
-import math
 import os
+import math
+import pygame 
 import pymunk
+from objects import Box
 
 
-def image(path : str, size : tuple, alpha=True):
-    if not alpha:    
-        img = pygame.image.load(os.path.join(path)).convert()
-    else:
-        img =  pygame.image.load(os.path.join(path)).convert_alpha()
-        
-    img = pygame.transform.scale(img, size)
-
-    return img
+# Adds all the boxes within the array of boxes in our space/level
+def make_box(size : tuple, pos : tuple, space, image_path="images/box.jpeg"):
+    body = Box(size, pos, image_path=image_path)
+    return [body, body.create(space)]
 
 def respawn(red):
     red.velocity = (0, 0)
@@ -103,10 +99,3 @@ def clamp_vels(space):
                 speed = body.velocity.length
                 if speed > MAX_VEL:
                     body.velocity = body.velocity * (MAX_VEL / speed)
-
-from objects import Box
-
-# Adds all the boxes within the array of boxes in our space/level
-def make_box(size : tuple, pos : tuple, space, image_path="images/box.jpeg"):
-    body = Box(size, pos, image_path=image_path)
-    return [body, body.create(space)]

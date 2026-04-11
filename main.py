@@ -1,10 +1,12 @@
+import os
+import math
 import pygame
 import pymunk
+from objects import image
 import pymunk.pygame_util
-import os
-from helpers import image, create_band, snap_check, grab, make_box, respawn, clamp_vels
 from characters import Pig, Bird
-import math
+from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels
+
 
 # This is just Boiler Plate
 pygame.display.set_caption('Knock-Off Angry Birds')
