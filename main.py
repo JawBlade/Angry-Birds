@@ -96,7 +96,7 @@ while running:
     elif released == True:
         launch = True
     if launch and red.velocity.length <= 5:
-        released, dragging, idle, launch = respawn(red, screen)
+        released, dragging, idle, launch = respawn(red)
 
     released = snap_check(red, released) 
 

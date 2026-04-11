@@ -14,9 +14,7 @@ def image(path : str, size : tuple, alpha=True):
 
     return img
 
-def respawn(red, screen):
-
-    pygame.transform.rotate(screen, math.degrees(90))
+def respawn(red):
     red.velocity = (0, 0)
     red.angular_velocity = 0
     red.angle = 0
@@ -46,9 +44,9 @@ def grab(mouse_pos : tuple, red, released : bool, launch : bool):
         bird_x, bird_y = red.position
         dx = bird_x - mouse_pos[0]
         dy = bird_y - mouse_pos[1]
-        distance = math.sqrt(dx**2 + dy**2)
+        dist = math.sqrt(dx**2 + dy**2)
 
-        if distance < SNAP_RADIUS:
+        if dist < SNAP_RADIUS:
             red.position = pygame.mouse.get_pos()
             red.velocity = (0,0)
             red.angular_velocity = 0
@@ -92,8 +90,7 @@ def create_band(screen, img, start_pos : tuple, end_pos : tuple):
         
         pygame.draw.polygon(screen, (0, 0, 0), points, 2)
 
-
- # Clause did this
+# Clause did this
 def clamp_vels(space):
     MAX_VEL = 3000
     for body in space.bodies:
