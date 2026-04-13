@@ -82,7 +82,7 @@ while running:
                 is_dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP: 
-            if dragging and not launch and dragging:
+            if dragging and not launch:
                 dragging = False
                 released = True
                 px, py = red.position
