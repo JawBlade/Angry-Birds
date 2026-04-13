@@ -19,33 +19,25 @@ def respawn(red):
     return False, False, True, False
 
 def distance(p1, p2):
-    return math.sqrt((p2[1] - p1[1]) **2 + (p2[0] - p1[0]) **2)
+    return math.sqrt((p2[0] - p1[0]) **2 + (p2[1] - p1[1]) **2)
 
 # Checks if you let go of the bird in a certain radius
-def snap_check(red, released : bool, SLINGSHOT_POS=(225, 410)):
-    SNAP_RADIUS = 60
-    if released and red.velocity.length < 5:
+def snap_check(red, released: bool, SLINGSHOT_POS=(225, 410)):
+    SNAP_RADIUS = 45
+    if released:
         dist = distance(red.position, SLINGSHOT_POS)
-
         if dist < SNAP_RADIUS:
             red.position = SLINGSHOT_POS
-            red.velocity = (0,0)
+            red.velocity = (0, 0)
             return False
     return released
 
 # Checks if you click close enough to the bird
-def grab(mouse_pos : tuple, red, released : bool, launch : bool):
-    SNAP_RADIUS = 40
+def grab(mouse_pos: tuple, red, released: bool, launch: bool):
+    GRAB_RADIUS = 40
     if not released and not launch:
-        bird_x, bird_y = red.position
-        dx = bird_x - mouse_pos[0]
-        dy = bird_y - mouse_pos[1]
-        dist = math.sqrt(dx**2 + dy**2)
-
-        if dist < SNAP_RADIUS:
-            red.position = pygame.mouse.get_pos()
-            red.velocity = (0,0)
-            red.angular_velocity = 0
+        dist = distance(red.position, mouse_pos)
+        if dist < GRAB_RADIUS:
             return True
     return False
 

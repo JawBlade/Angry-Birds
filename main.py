@@ -5,7 +5,7 @@ import pymunk
 from objects import image
 import pymunk.pygame_util
 from characters import Pig, Bird
-from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels
+from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels, distance
 
 
 # This is just Boiler Plate
@@ -51,7 +51,8 @@ running   = True
 released  = False
 dragging  = False
 idle      = True
-launch    = False
+launch    = False 
+MAX_PULL = 90
 SLING_POS = (225, 410)
 
 bg_img = image('images/back.jpg', (WIDTH, HEIGHT))
@@ -92,19 +93,29 @@ while running:
                 red.velocity = (offset_x * POWER, offset_y * POWER)
 
     button = pygame.mouse.get_pressed()
-
     # Logic for different states
     if dragging:
-            idle = False
-    elif idle == True:
-            red.position = SLING_POS
-            red.velocity = (0, 0)
-    elif released == True:
+        idle = False
+        dx, dy = mouse_pos[0] - SLING_POS[0], mouse_pos[1] - SLING_POS[1]
+        dist = math.hypot(dx, dy)
+        if dist > MAX_PULL:
+            dx = dx * MAX_PULL / dist
+            dy = dy * MAX_PULL / dist
+        red.position = (SLING_POS[0] + dx, SLING_POS[1] + dy)
+        red.velocity = (0, 0)
+        red.angular_velocity = 0
+    elif idle:
+        red.position = SLING_POS
+        red.velocity = (0, 0)
+    elif released and not launch:
+        released = snap_check(red, released)
         launch = True
+
     if launch and red.velocity.length <= 5:
         released, dragging, idle, launch = respawn(red)
-
-    released = snap_check(red, released) 
+    elif released and launch and red.velocity.length <= 50:
+        print('bang')
+        # Here we will create our code to make the player choose to use the next bird py pressing a button if the bird it taking to long to dissappear
 
     clamp_vels(space)
     space.step(1.0 / 60.0)
@@ -112,17 +123,17 @@ while running:
     dx, dy = bird_x - 225, bird_y - 410 
     angle_to_bird = math.atan2(dy, dx)
     attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
-    
+
     # Drawing Logic like the visuals: Bakcgroud, bird, pig, Slingshot, and boxes
     screen.blit(bg_img, (0, 0))
     
-    if button[0] and grab(mouse_pos, red, released, launch):
+    if dragging:
         create_band(screen, band, (257, 413), attach_point)
             
     screen.blit(sling_r, (75, 320))
     red_body.mask(screen, red) 
 
-    if button[0] and grab(mouse_pos, red, released, launch):
+    if dragging:
         create_band(screen, band, (197, 418), attach_point)
             
     screen.blit(sling_l, (75, 320))
