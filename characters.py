@@ -1,6 +1,7 @@
+import math 
 import pymunk
 import pygame
-import math 
+
 
 class characters:
     def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7):
@@ -63,6 +64,14 @@ class characters:
 
         rect = img_rotated.get_rect(center=(x, y))
         screen.blit(img_rotated, rect)
+        
+    def remove(self, body, space):
+        shapes = list(body.shapes)
+        for shape in shapes:
+            if shape in space.shapes:
+                space.remove(shape)
+        if body in space.bodies:
+            space.remove(body)
 
 
 class Bird(characters):

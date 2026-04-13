@@ -1,8 +1,18 @@
+import os
+import math
 import pymunk
 import pygame
-from helpers import image
-import math
 
+
+def image(path : str, size : tuple, alpha=True):
+    if not alpha:    
+        img = pygame.image.load(os.path.join(path)).convert()
+    else:
+        img =  pygame.image.load(os.path.join(path)).convert_alpha()
+        
+    img = pygame.transform.scale(img, size)
+
+    return img
 
 class Box:
     def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None):
