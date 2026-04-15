@@ -56,6 +56,11 @@ MAX_PULL  = 120
 SLING_POS = (225, 410)
 LIVES     = 3
 
+life_display = []
+for i in range(LIVES):
+    life_counter = image('images/red2.webp', (64,64))
+    life_display.append(life_counter)
+
 bg_img  = image('images/back.jpg', (WIDTH, HEIGHT))
 sling_r = image('images/slingshot/right_stick_sling.png', (300,300))
 sling_l = image('images/slingshot/left_stick_sling.png', (300,300))
@@ -119,7 +124,6 @@ while running:
         print('bang')
         # Here we will create our code to make the player choose to use the next bird py pressing a button if the bird it taking to long to dissappear
 
-    print(LIVES)
     clamp_vels(space)
     space.step(1.0 / 60.0)
     
@@ -129,7 +133,12 @@ while running:
 
     # Drawing Logic like the visuals: Bakcgroud, bird, pig, Slingshot, and boxes
     screen.blit(bg_img, (0, 0))
-    
+
+    gap = 10
+    for i in range(LIVES):
+        screen.blit(life_display[i], (gap, 10))
+        gap += 70
+
     if dragging:
         create_band(screen, band, (257, 413), attach_point)
             

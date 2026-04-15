@@ -1,3 +1,6 @@
-from helpers import timer
 
-timer(60)
+l = []
+for i in range(3):
+    l.append(i)
+
+print(l)
