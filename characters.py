@@ -4,7 +4,7 @@ import pygame
 
 
 class characters:
-    def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7):
+    def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7, health= 100):
         self.mass = mass
         self.radius = radius
         self.pos = pos
@@ -12,6 +12,7 @@ class characters:
         self.scale_mult = scale_mult
         self._cached_img = None 
         self._image_original = None
+        self.health = health
 
         if image_surf is not None:
             self._image_original = image_surf
@@ -76,7 +77,7 @@ class characters:
 
 class Bird(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/red2webp"):
-        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7)
+        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7, health= None)
 
 class Pig(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/pig.webp"):

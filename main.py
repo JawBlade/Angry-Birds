@@ -31,7 +31,7 @@ boxes = [
 # Adds Floor
 floor_body = space.static_body
 floor_body.position = (0, 567)
-floor = pymunk.Segment(floor_body, (0, 0), (1280, 0), 1)
+floor = pymunk.Segment(floor_body, (-1000, 0), (2280, 0), 1)
 floor.friction = 1
 floor.color    = (103, 177, 20, 0)
 space.add(floor)
@@ -75,6 +75,10 @@ while running:
             running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if red.velocity.length <= 75:
+                if released == True:
+                    LIVES -= 1
+                released, dragging, idle, launch = respawn(red, LIVES)
 
             bird_x, bird_y = red.position
             mouse_x, mouse_y = event.pos
@@ -118,11 +122,13 @@ while running:
         launch   = True
 
     if launch and red.velocity.length <= 5:
-        LIVES -= 1
+        if released == True:
+            LIVES -= 1
         released, dragging, idle, launch = respawn(red, LIVES)
-    elif released and launch and red.velocity.length <= 50:
-        print('bang')
-        # Here we will create our code to make the player choose to use the next bird py pressing a button if the bird it taking to long to dissappear
+    elif bird_x >= 1300 and  bird_y >= 500:
+        if released == True:
+            LIVES -= 1
+        released, dragging, idle, launch = respawn(red, LIVES)
 
     clamp_vels(space)
     space.step(1.0 / 60.0)

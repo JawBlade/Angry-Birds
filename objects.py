@@ -15,11 +15,12 @@ def image(path : str, size : tuple, alpha=True):
     return img
 
 class Box:
-    def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None):
+    def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None, health= 100):
         self.size = size
         self.pos = pos
         self._image_original = None
-        self._cached_img = None
+        self._cached_img     = None
+        self.health = health
 
         if image_surf is not None:
             self._image_original = image_surf
