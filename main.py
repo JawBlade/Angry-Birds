@@ -1,3 +1,9 @@
+# need to make the start, pause and level screen.
+# The health for the pigs and boxes
+# score
+# make 2 more levels
+# DONE!
+
 import os
 import math
 import pygame
