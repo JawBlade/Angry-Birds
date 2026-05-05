@@ -108,7 +108,6 @@ while running:
                 red.body_type = pymunk.Body.DYNAMIC
                 red.velocity  = (offset_x * POWER, offset_y * POWER)
 
-    button = pygame.mouse.get_pressed()
     # Logic for different states
     if dragging:
         idle   = False
