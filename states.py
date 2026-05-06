@@ -172,15 +172,25 @@ class PlayingState(State):
 class MenuState(State):
     def __init__(self, game):
         super().__init__(game)
+        self.WIDTH, self.HEIGHT = (1280, 720)
+        self.bg_img = image('images/back.jpg', (self.WIDTH, self.HEIGHT))
+
+        self.clock = self.game.clock
 
     def handle_event(self, event):
-        pass
+        if event.type == pygame.QUIT:
+            self.game.running = False
 
     def update(self):
         pass
 
     def draw(self, screen):
-        pass
+        text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
+        screen.blit(self.bg_img, (0, 0))
+
+        screen.blit(text_surface, (500, 100))
+        pygame.display.flip()
+        self.clock.tick(60)
     
 class PausedState(State):
     def __init__(self, game):
