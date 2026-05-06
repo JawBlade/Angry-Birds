@@ -4,11 +4,13 @@ from states import PlayingState, MenuState, PausedState, GameoverState
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((1280, 720))
+        self.WIDTH, self.HEIGHT = (1280, 720)
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
         self.state = MenuState(self)
-        self.font = pygame.font.Font('../angrybirds-regular.ttf', 64)
+
+        self.font = pygame.font.Font('../angrybirds-regular.ttf', 90)
 
     def change_state(self, new_state):
         self.state = new_state

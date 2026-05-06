@@ -1,5 +1,6 @@
 import os
 import math
+from tkinter import font
 import pygame
 import pymunk
 from objects import image
@@ -25,7 +26,7 @@ class PlayingState(State):
     def __init__(self, game):
         super().__init__(game)
 
-        self.WIDTH, self.HEIGHT = (1280, 720)
+        self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
         self.screen = self.game.screen
         self.clock = self.game.clock
 
@@ -39,12 +40,12 @@ class PlayingState(State):
             make_box((40, 100), (1000, 517), self.space),
         ]
 
-        self.floor_body = self.space.static_body
-        self.floor_body.position = (0, 567)
-        self.floor = pymunk.Segment(self.floor_body, (-1000, 0), (2280, 0), 1)
-        self.floor.friction = 1
-        self.floor.color = (103, 177, 20, 0)
-        self.space.add(self.floor)
+        floor_body = self.space.static_body
+        floor_body.position = (0, 567)
+        floor = pymunk.Segment(floor_body, (-1000, 0), (2280, 0), 1)
+        floor.friction = 1
+        floor.color = (103, 177, 20, 0)
+        self.space.add(floor)
 
         self.red_body = Bird(0.6, 27, (225, 410), image_path="images/red2.webp")
         self.red = self.red_body.create(self.space)
@@ -105,18 +106,17 @@ class PlayingState(State):
                 self.red.velocity = (offset_x * POWER, offset_y * POWER)
 
     def update(self):
-        self.bird_x, self.bird_y = self.red.position
+        bird_x, bird_y = self.red.position
         self.mouse_pos = pygame.mouse.get_pos()
-        self.button = pygame.mouse.get_pressed()
 
         if self.dragging:
             self.idle = False
-            self.dx, self.dy = self.mouse_pos[0] - self.SLING_POS[0], self.mouse_pos[1] - self.SLING_POS[1]
-            self.dist = math.hypot(self.dx, self.dy)
-            if self.dist > self.MAX_PULL:
-                self.dx = self.dx * self.MAX_PULL / self.dist
-                self.dy = self.dy * self.MAX_PULL / self.dist
-            self.red.position = (self.SLING_POS[0] + self.dx, self.SLING_POS[1] + self.dy)
+            dx, dy = self.mouse_pos[0] - self.SLING_POS[0], self.mouse_pos[1] - self.SLING_POS[1]
+            dist = math.hypot(dx, dy)
+            if dist > self.MAX_PULL:
+                dx = dx * self.MAX_PULL / dist
+                dy = dy * self.MAX_PULL / dist
+            self.red.position = (self.SLING_POS[0] + dx, self.SLING_POS[1] + dy)
             self.red.velocity = (0, 0)
             self.red.angular_velocity = 0
         elif self.idle:
@@ -130,7 +130,7 @@ class PlayingState(State):
             if self.released:
                 self.LIVES -= 1
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
-        elif self.bird_x >= 1300 and self.bird_y >= 500:
+        elif bird_x >= 1300 and bird_y >= 500:
             if self.released:
                 self.LIVES -= 1
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
@@ -138,9 +138,9 @@ class PlayingState(State):
         clamp_vels(self.space)
         self.space.step(1.0 / 60.0)
 
-        self.dx, self.dy = self.bird_x - 225, self.bird_y - 410
-        self.angle_to_bird = math.atan2(self.dy, self.dx)
-        self.attach_point = (self.bird_x + math.cos(self.angle_to_bird) * 36, self.bird_y + math.sin(self.angle_to_bird) * 36)
+        dx, dy = bird_x - 225, bird_y - 410
+        angle_to_bird = math.atan2(dy, dx)
+        self.attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
 
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
@@ -185,10 +185,65 @@ class MenuState(State):
         pass
 
     def draw(self, screen):
-        text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
         screen.blit(self.bg_img, (0, 0))
 
-        screen.blit(text_surface, (500, 100))
+        text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
+        screen.blit(text_surface, (425, 100))
+
+        # Play Button code
+        GOLD_DARK     = (210, 140,  10)   # outer border
+        GOLD_MID      = (240, 175,  20)   # button face (dark band)
+        GOLD_LIGHT    = (255, 210,  80)   # button face (light band)
+        CREAM         = (255, 245, 210)   # inner highlight rim
+        WHITE         = (255, 255, 255)   # text fill
+        SHADOW        = (180, 140,  30)   # text shadow / outline
+        
+        BTN_W, BTN_H = 212, 90
+        BTN_X = (self.WIDTH - BTN_W) // 2
+        BTN_Y = (self.HEIGHT - BTN_H) // 2
+        RADIUS = 18
+
+        surf = self.game.screen
+        r = pygame.Rect(BTN_X, BTN_Y, BTN_W, BTN_H)
+
+        # 1) Dark gold outer border
+        pygame.draw.rect(surf, GOLD_DARK, r, 18)
+
+        # 2) Main gold face (inset by 3px)
+        inner = r.inflate(-6, -6)
+        pygame.draw.rect(surf, GOLD_MID, inner, RADIUS - 2)
+
+        # 3) Lighter highlight stripe across top half
+        top_half = pygame.Rect(inner.x, inner.y, inner.w, inner.h // 2)
+        highlight_surf = pygame.Surface((inner.w, inner.h // 2), pygame.SRCALPHA)
+        highlight_surf.fill((0, 0, 0, 0))
+        pygame.draw.rect(highlight_surf, GOLD_LIGHT,
+                        (0, 0, inner.w, inner.h // 2),
+                        border_radius=RADIUS - 2)
+        surf.blit(highlight_surf, top_half.topleft)
+
+        # 4) Cream inner rim
+        rim = inner.inflate(-6, -6)
+        pygame.draw.rect(surf, CREAM, rim, RADIUS - 4)
+
+        # 5) Gold fill inside rim
+        fill = rim.inflate(-8, -8)
+        color = GOLD_LIGHT
+        pygame.draw.rect(surf, color, fill, RADIUS - 6)
+
+        # 6) Text with chunky outline/shadow
+        label = "PLAY"
+        text_surf = self.game.font.render(label, True, WHITE)
+        shadow_surf = self.game.font.render(label, True, SHADOW)
+
+        tx = r.centerx - text_surf.get_width() // 2
+        ty = r.centery - text_surf.get_height() // 2 - 2
+
+        # Draw shadow offsets
+        for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
+            surf.blit(shadow_surf, (tx + dx, ty + dy))
+        surf.blit(text_surf, (tx, ty))
+
         pygame.display.flip()
         self.clock.tick(60)
     
