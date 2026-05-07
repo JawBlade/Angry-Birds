@@ -27,16 +27,18 @@ FONT_PATH = "../angrybirds-regular.ttf"   # ← put your font file here
 FONT_SIZE = 54
 font = pygame.font.Font(FONT_PATH, FONT_SIZE)
 
+def draw_rounded_rect(surf, color, rect, radius):
+    pygame.draw.rect(surf, color, rect, border_radius=radius)
+
 def draw_button(surf, hovered=False):
-    surf = self.game.screen
     r = pygame.Rect(BTN_X, BTN_Y, BTN_W, BTN_H)
 
     # 1) Dark gold outer border
-    pygame.draw.rect(surf, GOLD_DARK, r, 18)
+    draw_rounded_rect(surf, GOLD_DARK, r, RADIUS)
 
     # 2) Main gold face (inset by 3px)
     inner = r.inflate(-6, -6)
-    pygame.draw.rect(surf, GOLD_MID, inner, RADIUS - 2)
+    draw_rounded_rect(surf, GOLD_MID, inner, RADIUS - 2)
 
     # 3) Lighter highlight stripe across top half
     top_half = pygame.Rect(inner.x, inner.y, inner.w, inner.h // 2)
@@ -49,12 +51,12 @@ def draw_button(surf, hovered=False):
 
     # 4) Cream inner rim
     rim = inner.inflate(-6, -6)
-    pygame.draw.rect(surf, CREAM, rim, RADIUS - 4)
+    draw_rounded_rect(surf, CREAM, rim, RADIUS - 4)
 
     # 5) Gold fill inside rim
     fill = rim.inflate(-8, -8)
     color = GOLD_LIGHT if hovered else GOLD_MID
-    pygame.draw.rect(surf, color, fill, RADIUS - 6)
+    draw_rounded_rect(surf, color, fill, RADIUS - 6)
 
     # 6) Text with chunky outline/shadow
     label = "PLAY"

@@ -168,84 +168,67 @@ class PlayingState(State):
         pygame.display.flip()
         self.clock.tick(60)
 
-
+# I got help creating the Button from claude.
 class MenuState(State):
     def __init__(self, game):
         super().__init__(game)
-        self.WIDTH, self.HEIGHT = (1280, 720)
-        self.bg_img = image('images/back.jpg', (self.WIDTH, self.HEIGHT))
+        self.bg_img = image('images/back.jpg', (1280, 720))
 
-        self.clock = self.game.clock
+    
+        BTN_W, BTN_H = 212, 90
+        self.btn_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
+        self.btn_font = pygame.font.Font('../angrybirds-regular.ttf', 54)
+
+        
+        self.GOLD_DARK  = (210, 140,  10)
+        self.GOLD_MID   = (240, 175,  20)
+        self.GOLD_LIGHT = (255, 210,  80)
+        self.CREAM      = (255, 245, 210)
+        self.RADIUS     = 18
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.game.running = False
-
-    def update(self):
-        pass
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.btn_rect.collidepoint(event.pos):
+                self.game.change_state(PlayingState(self.game))  # ← transition!
 
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
-
         text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
         screen.blit(text_surface, (425, 100))
+        self._draw_button(screen)
+        pygame.display.flip()
+        self.game.clock.tick(60)
 
-        # Play Button code
-        GOLD_DARK     = (210, 140,  10)   # outer border
-        GOLD_MID      = (240, 175,  20)   # button face (dark band)
-        GOLD_LIGHT    = (255, 210,  80)   # button face (light band)
-        CREAM         = (255, 245, 210)   # inner highlight rim
-        WHITE         = (255, 255, 255)   # text fill
-        SHADOW        = (180, 140,  30)   # text shadow / outline
-        
-        BTN_W, BTN_H = 212, 90
-        BTN_X = (self.WIDTH - BTN_W) // 2
-        BTN_Y = (self.HEIGHT - BTN_H) // 2
-        RADIUS = 18
+    def _draw_button(self, surf):
+        hovered = self.btn_rect.collidepoint(pygame.mouse.get_pos())
+        r = self.btn_rect
+        RADIUS = self.RADIUS
 
-        surf = self.game.screen
-        r = pygame.Rect(BTN_X, BTN_Y, BTN_W, BTN_H)
+        pygame.draw.rect(surf, self.GOLD_DARK, r, border_radius=RADIUS)
 
-        # 1) Dark gold outer border
-        pygame.draw.rect(surf, GOLD_DARK, r, 18)
-
-        # 2) Main gold face (inset by 3px)
         inner = r.inflate(-6, -6)
-        pygame.draw.rect(surf, GOLD_MID, inner, RADIUS - 2)
+        pygame.draw.rect(surf, self.GOLD_MID, inner, border_radius=RADIUS - 2)
 
-        # 3) Lighter highlight stripe across top half
         top_half = pygame.Rect(inner.x, inner.y, inner.w, inner.h // 2)
         highlight_surf = pygame.Surface((inner.w, inner.h // 2), pygame.SRCALPHA)
-        highlight_surf.fill((0, 0, 0, 0))
-        pygame.draw.rect(highlight_surf, GOLD_LIGHT,
-                        (0, 0, inner.w, inner.h // 2),
-                        border_radius=RADIUS - 2)
+        pygame.draw.rect(highlight_surf, self.GOLD_LIGHT, (0, 0, inner.w, inner.h // 2), border_radius=RADIUS - 2)
         surf.blit(highlight_surf, top_half.topleft)
 
-        # 4) Cream inner rim
         rim = inner.inflate(-6, -6)
-        pygame.draw.rect(surf, CREAM, rim, RADIUS - 4)
+        pygame.draw.rect(surf, self.CREAM, rim, border_radius=RADIUS - 4)
 
-        # 5) Gold fill inside rim
         fill = rim.inflate(-8, -8)
-        color = GOLD_LIGHT
-        pygame.draw.rect(surf, color, fill, RADIUS - 6)
+        pygame.draw.rect(surf, self.GOLD_LIGHT if hovered else self.GOLD_MID, fill, border_radius=RADIUS - 6)
 
-        # 6) Text with chunky outline/shadow
-        label = "PLAY"
-        text_surf = self.game.font.render(label, True, WHITE)
-        shadow_surf = self.game.font.render(label, True, SHADOW)
-
+        text_surf   = self.btn_font.render("PLAY", True, (255, 255, 255))
+        shadow_surf = self.btn_font.render("PLAY", True, (180, 140, 30))
         tx = r.centerx - text_surf.get_width() // 2
         ty = r.centery - text_surf.get_height() // 2 - 2
-
-        # Draw shadow offsets
         for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
             surf.blit(shadow_surf, (tx + dx, ty + dy))
         surf.blit(text_surf, (tx, ty))
-
-        pygame.display.flip()
-        self.clock.tick(60)
     
 class PausedState(State):
     def __init__(self, game):
