@@ -174,11 +174,10 @@ class MenuState(State):
         super().__init__(game)
         self.bg_img = image('images/back.jpg', (1280, 720))
 
-    
-        BTN_W, BTN_H = 212, 90
-        self.btn_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
-        self.btn_font = pygame.font.Font('../angrybirds-regular.ttf', 54)
+        self.growing = True
+        self.growth = 0
 
+        self.font_size = 54
         
         self.GOLD_DARK  = (210, 140,  10)
         self.GOLD_MID   = (240, 175,  20)
@@ -191,18 +190,37 @@ class MenuState(State):
             self.game.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.btn_rect.collidepoint(event.pos):
-                self.game.change_state(PlayingState(self.game))  # ← transition!
+                self.game.change_state(PlayingState(self.game))
+
+    def update(self):
+        if self.growing:
+            self.growth += 0.5
+            self.font_size += self.growth - 5
+            if self.growth >= 20:
+                self.growing = False
+        else:
+            self.growth -= 0.5
+            self.font_size -= self.growth - 5
+            if self.growth <= 0:
+                self.growing = True
+
+        BTN_W, BTN_H = 212 + self.growth, 90 + self.growth
+        self.btn_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
+
+        self.btn_font = pygame.font.Font('../angrybirds-regular.ttf', int(self.font_size))
 
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
+        self.text_surf   = self.btn_font.render("PLAY", True, (255, 255, 255))
+        self.shadow_surf = self.btn_font.render("PLAY", True, (180, 140, 30))
         text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
         screen.blit(text_surface, (425, 100))
+
         self._draw_button(screen)
         pygame.display.flip()
         self.game.clock.tick(60)
 
     def _draw_button(self, surf):
-        hovered = self.btn_rect.collidepoint(pygame.mouse.get_pos())
         r = self.btn_rect
         RADIUS = self.RADIUS
 
@@ -211,24 +229,17 @@ class MenuState(State):
         inner = r.inflate(-6, -6)
         pygame.draw.rect(surf, self.GOLD_MID, inner, border_radius=RADIUS - 2)
 
-        top_half = pygame.Rect(inner.x, inner.y, inner.w, inner.h // 2)
-        highlight_surf = pygame.Surface((inner.w, inner.h // 2), pygame.SRCALPHA)
-        pygame.draw.rect(highlight_surf, self.GOLD_LIGHT, (0, 0, inner.w, inner.h // 2), border_radius=RADIUS - 2)
-        surf.blit(highlight_surf, top_half.topleft)
-
         rim = inner.inflate(-6, -6)
         pygame.draw.rect(surf, self.CREAM, rim, border_radius=RADIUS - 4)
 
         fill = rim.inflate(-8, -8)
-        pygame.draw.rect(surf, self.GOLD_LIGHT if hovered else self.GOLD_MID, fill, border_radius=RADIUS - 6)
+        pygame.draw.rect(surf, self.GOLD_MID, fill, border_radius=RADIUS - 6)
 
-        text_surf   = self.btn_font.render("PLAY", True, (255, 255, 255))
-        shadow_surf = self.btn_font.render("PLAY", True, (180, 140, 30))
-        tx = r.centerx - text_surf.get_width() // 2
-        ty = r.centery - text_surf.get_height() // 2 - 2
+        tx = r.centerx - self.text_surf.get_width() // 2
+        ty = r.centery - self.text_surf.get_height() // 2 - 2
         for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
-            surf.blit(shadow_surf, (tx + dx, ty + dy))
-        surf.blit(text_surf, (tx, ty))
+            surf.blit(self.shadow_surf, (tx + dx, ty + dy))
+        surf.blit(self.text_surf, (tx, ty))
     
 class PausedState(State):
     def __init__(self, game):

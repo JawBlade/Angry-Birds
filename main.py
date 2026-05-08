@@ -8,6 +8,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
+        
         self.state = MenuState(self)
 
         self.font = pygame.font.Font('../angrybirds-regular.ttf', 90)
