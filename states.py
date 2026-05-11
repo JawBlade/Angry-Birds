@@ -200,19 +200,21 @@ class MenuState(State):
     def update(self):
         if self.growing:
             self.growth += 0.4
-            self.font_size += 0.2
+            if self.menu:
+                self.font_size += 0.2
             if self.growth >= 20:
                 self.growing = False
         else:
             self.growth -= 0.4
-            self.font_size -= 0.2
+            if self.menu:
+                self.font_size -= 0.2
             if self.growth <= 0:
                 self.growing = True
 
-        if self.menu == False:
-            BTN_W, BTN_H = 75 + self.growth , 90 + self.growth
-        elif self.menu:
+        if self.menu:
             BTN_W, BTN_H = 212 + self.growth, 90 + self.growth
+        elif self.menu == False:
+            BTN_W, BTN_H = (75 , 90)
 
         self.btn_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
 
