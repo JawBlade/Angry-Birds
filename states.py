@@ -177,7 +177,8 @@ class MenuState(State):
         self.growing = True
         self.growth = 0
 
-        self.font_size = 54
+        self.font_size = 44
+        self.menu = True
         
         self.GOLD_DARK  = (210, 140,  10)
         self.GOLD_MID   = (240, 175,  20)
@@ -190,33 +191,53 @@ class MenuState(State):
             self.game.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.btn_rect.collidepoint(event.pos):
-                self.game.change_state(PlayingState(self.game))
+
+                if self.menu == False:
+                    self.game.change_state(PlayingState(self.game))
+
+                self.menu = False
 
     def update(self):
         if self.growing:
-            self.growth += 0.5
-            self.font_size += self.growth - 5
+            self.growth += 0.4
+            self.font_size += 0.2
             if self.growth >= 20:
                 self.growing = False
         else:
-            self.growth -= 0.5
-            self.font_size -= self.growth - 5
+            self.growth -= 0.4
+            self.font_size -= 0.2
             if self.growth <= 0:
                 self.growing = True
 
-        BTN_W, BTN_H = 212 + self.growth, 90 + self.growth
+        if self.menu == False:
+            BTN_W, BTN_H = 75 + self.growth , 90 + self.growth
+        elif self.menu:
+            BTN_W, BTN_H = 212 + self.growth, 90 + self.growth
+
         self.btn_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
 
         self.btn_font = pygame.font.Font('../angrybirds-regular.ttf', int(self.font_size))
 
     def draw(self, screen):
-        screen.blit(self.bg_img, (0, 0))
-        self.text_surf   = self.btn_font.render("PLAY", True, (255, 255, 255))
-        self.shadow_surf = self.btn_font.render("PLAY", True, (180, 140, 30))
-        text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
-        screen.blit(text_surface, (425, 100))
+        if self.menu:
+            screen.blit(self.bg_img, (0, 0))
 
-        self._draw_button(screen)
+            self.text_surf   = self.btn_font.render("LEVELS", True, (255, 255, 255))
+            self.shadow_surf = self.btn_font.render("LEVELS", True, (180, 140, 30))
+            text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
+            screen.blit(text_surface, (425, 100))
+
+            self._draw_button(screen)
+        elif self.menu == False:
+            screen.blit(self.bg_img, (0, 0))
+
+            self.text_surf   = self.btn_font.render("1", True, (255, 255, 255))
+            self.shadow_surf = self.btn_font.render("1", True, (180, 140, 30))
+            text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
+            screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
+
+            self._draw_button(screen)
+
         pygame.display.flip()
         self.game.clock.tick(60)
 
