@@ -83,3 +83,10 @@ class Bird(characters):
 class Pig(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/pig.webp"):
         super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(0, -3), scale_mult=2.4)
+
+    def create(self, space):
+        body = super().create(space)
+        # Override collision type set by parent
+        for shape in body.shapes:
+            shape.collision_type = 3
+        return body

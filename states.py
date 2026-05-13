@@ -35,7 +35,9 @@ class PlayingState(State):
         self.space.damping = 0.65
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 
-        handle_coll = self.space.on_collision(1, 2, post_solve=self.on_hit)
+        self.space.on_collision(1, 2, post_solve=self.on_hit)
+
+        self.space.on_collision(1, 3, post_solve=self.on_hit)
 
         self.boxes = [
             make_box((40, 100), (1125, 517), self.space),
@@ -174,7 +176,8 @@ class PlayingState(State):
             create_band(screen, self.band, (197, 418), self.attach_point)
 
         screen.blit(self.sling_l, (75, 320))
-        self.pig_b.mask(screen, self.pig)
+        if self.pig in self.entities:
+            self.pig_b.mask(screen, self.pig)
 
         for body, box in self.boxes:
             body.mask(screen, box)
