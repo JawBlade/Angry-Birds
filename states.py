@@ -76,6 +76,11 @@ class PlayingState(State):
         self.sling_r = image('images/slingshot/right_stick_sling.png', (300, 300))
         self.sling_l = image('images/slingshot/left_stick_sling.png', (300, 300))
 
+        self.entities = {}
+        self.entities[self.pig] = self.pig_b
+        for box_obj, box_body in self.boxes:
+            self.entities[box_body] = box_obj
+
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.game.running = False
@@ -138,6 +143,13 @@ class PlayingState(State):
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
 
         clamp_vels(self.space)
+
+        dead = [body for body, obj in self.entities.items() if obj.health is not None and obj.health <= 0]
+        for body in dead:
+            self.entities[body].remove(body, self.space)
+            self.boxes = [[obj, b] for obj, b in self.boxes if b != body]
+            del self.entities[body]
+            
         self.space.step(1.0 / 60.0)
 
         dx, dy = bird_x - 225, bird_y - 410
@@ -172,7 +184,18 @@ class PlayingState(State):
 
     def on_hit(self, arbiter, space, data):
         impulse = arbiter.total_impulse.length
-        print(impulse)
+        THRESHOLD = 30
+
+        if impulse > THRESHOLD:
+            damage = impulse * 0.5
+
+            for shape in arbiter.shapes:
+                body = shape.body
+
+                if body in self.entities:
+                    self.entities[body].health -= damage
+                    print(self.entities[body].health)
+
         return True
 
 # I got help creating the Button from claude.

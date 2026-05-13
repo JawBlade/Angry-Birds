@@ -59,3 +59,11 @@ class Box:
         rect = img_rotated.get_rect(center=(int(x), int(y)))
 
         screen.blit(img_rotated, rect.topleft)
+    
+    def remove(self, body, space):
+        shapes = list(body.shapes)
+        for shape in shapes:
+            if shape in space.shapes:
+                space.remove(shape)
+        if body in space.bodies:
+            space.remove(body)
