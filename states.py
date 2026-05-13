@@ -35,9 +35,9 @@ class PlayingState(State):
         self.space.damping = 0.65
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 
-        self.space.on_collision(1, 2, post_solve=self.on_hit)
+        self.space.on_collision(1, 2, post_solve=self.on_hit) # Handles the collision between bird and boxes.
 
-        self.space.on_collision(1, 3, post_solve=self.on_hit)
+        self.space.on_collision(1, 3, post_solve=self.on_hit) # Handles collisions between birds and pigs.
 
         self.boxes = [
             make_box((40, 100), (1125, 517), self.space),
@@ -51,6 +51,7 @@ class PlayingState(State):
         floor.color = (103, 177, 20, 0)
         self.space.add(floor)
 
+        # Setting up the bird, rubber band and pigs.
         self.red_body = Bird(0.6, 27, (225, 410), image_path="images/red2.webp")
         self.red = self.red_body.create(self.space)
 
@@ -60,6 +61,7 @@ class PlayingState(State):
         self.pig_b = Pig(1, 27, (1063, 540), image_path="images/pig.webp")
         self.pig = self.pig_b.create(self.space)
 
+        # Normal vars for logic.
         self.released = False
         self.mouse_pos = (0, 0)
         self.dragging = False
@@ -69,6 +71,7 @@ class PlayingState(State):
         self.SLING_POS = (225, 410)
         self.LIVES = 3
 
+        # Shows how many live u got.
         self.life_display = []
         for i in range(self.LIVES):
             life_counter = image('images/red2.webp', (64, 64))
@@ -78,16 +81,20 @@ class PlayingState(State):
         self.sling_r = image('images/slingshot/right_stick_sling.png', (300, 300))
         self.sling_l = image('images/slingshot/left_stick_sling.png', (300, 300))
 
+        # Fliping the values bc i named them wrong
         self.entities = {}
         self.entities[self.pig] = self.pig_b
         for box_obj, box_body in self.boxes:
             self.entities[box_body] = box_obj
 
+    # This handles like all the inputs for the game.
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.game.running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+
+            # Checking if the bird if slow enough to respawn and if it was launched.
             if self.red.velocity.length <= 75:
                 if self.released:
                     self.LIVES -= 1
@@ -96,6 +103,8 @@ class PlayingState(State):
             bird_x, bird_y = self.red.position
             mouse_x, mouse_y = event.pos
             dist = math.hypot(bird_x - mouse_x, bird_y - mouse_y)
+
+            # Mouse has to be close enough to drag and hasn't been launched.
             if dist < 40 and not self.launch:
                 self.dragging = True
                 self.released = False
@@ -104,6 +113,8 @@ class PlayingState(State):
                 self.dragging = True
 
         if event.type == pygame.MOUSEBUTTONUP:
+
+            # Logic that launches the bird.
             if self.dragging and not self.launch:
                 self.dragging = False
                 self.released = True
@@ -114,14 +125,18 @@ class PlayingState(State):
                 self.red.body_type = pymunk.Body.DYNAMIC
                 self.red.velocity = (offset_x * POWER, offset_y * POWER)
 
+    # Updates all the vars that need to be updated and some logic.
     def update(self):
         bird_x, bird_y = self.red.position
         self.mouse_pos = pygame.mouse.get_pos()
 
+        # The main big if statement that handles the dragging and launching of the bird.
         if self.dragging:
             self.idle = False
             dx, dy = self.mouse_pos[0] - self.SLING_POS[0], self.mouse_pos[1] - self.SLING_POS[1]
             dist = math.hypot(dx, dy)
+
+            # This sets the radus of how far we can pull back.
             if dist > self.MAX_PULL:
                 dx = dx * self.MAX_PULL / dist
                 dy = dy * self.MAX_PULL / dist
@@ -139,14 +154,19 @@ class PlayingState(State):
             if self.released:
                 self.LIVES -= 1
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
+
+        # If the bird is off screen, respawn the bird.
         elif bird_x >= 1300 and bird_y >= 500:
             if self.released:
                 self.LIVES -= 1
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
 
-        clamp_vels(self.space)
+        clamp_vels(self.space) # Forgot what this does but Ik it's important.
 
+        # Goes through all the objects and checks their health to deteremine if thir dead.
         dead = [body for body, obj in self.entities.items() if obj.health is not None and obj.health <= 0]
+        
+        # Actually get rid of them on screen.
         for body in dead:
             self.entities[body].remove(body, self.space)
             self.boxes = [[obj, b] for obj, b in self.boxes if b != body]
@@ -157,10 +177,12 @@ class PlayingState(State):
         dx, dy = bird_x - 225, bird_y - 410
         angle_to_bird = math.atan2(dy, dx)
         self.attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
-
+    
+    # Draws all the visuals
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
 
+        # lives
         gap = 10
         for i in range(self.LIVES):
             screen.blit(self.life_display[i], (gap, 10))
@@ -185,6 +207,7 @@ class PlayingState(State):
         pygame.display.flip()
         self.clock.tick(60)
 
+    # Checks if the impules is above a threshold to damget eh obj based on the impulse.
     def on_hit(self, arbiter, space, data):
         impulse = arbiter.total_impulse.length
         THRESHOLD = 30
