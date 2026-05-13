@@ -35,6 +35,8 @@ class PlayingState(State):
         self.space.damping = 0.65
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 
+        handle_coll = self.space.on_collision(1, 2, post_solve=self.on_hit)
+
         self.boxes = [
             make_box((40, 100), (1125, 517), self.space),
             make_box((40, 100), (1000, 517), self.space),
@@ -168,6 +170,11 @@ class PlayingState(State):
         pygame.display.flip()
         self.clock.tick(60)
 
+    def on_hit(self, arbiter, space, data):
+        impulse = arbiter.total_impulse.length
+        print(impulse)
+        return True
+
 # I got help creating the Button from claude.
 class MenuState(State):
     def __init__(self, game):
@@ -230,6 +237,7 @@ class MenuState(State):
             screen.blit(text_surface, (425, 100))
 
             self._draw_button(screen)
+
         elif self.menu == False:
             screen.blit(self.bg_img, (0, 0))
 

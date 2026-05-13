@@ -34,6 +34,7 @@ class Box:
         body.position = self.pos
 
         box = pymunk.Poly.create_box(body, self.size, radius=2)
+        box.collision_type = 2
         box.friction = 0.3
 
         space.add(body, box)

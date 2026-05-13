@@ -30,6 +30,7 @@ class characters:
         body.position = self.pos
 
         circle = pymunk.Circle(body, radius)
+        circle.collision_type = 1
         circle.friction = 1
         circle.color = (213, 39, 42, 255)
         
