@@ -71,7 +71,7 @@ class PlayingState(State):
         self.SLING_POS = (225, 410)
         self.LIVES = 3
 
-        # Shows how many live u got.
+        # Shows how many lives u got.
         self.life_display = []
         for i in range(self.LIVES):
             life_counter = image('images/red2.webp', (64, 64))
@@ -220,7 +220,6 @@ class PlayingState(State):
 
                 if body in self.entities:
                     self.entities[body].health -= damage
-                    print(self.entities[body].health)
 
         return True
 
@@ -254,6 +253,7 @@ class MenuState(State):
                 self.menu = False
 
     def update(self):
+        # The logic to animate the play button
         if self.growing:
             self.growth += 0.4
             if self.menu:
@@ -276,10 +276,12 @@ class MenuState(State):
 
         self.btn_font = pygame.font.Font('../angrybirds-regular.ttf', int(self.font_size))
 
+    # Drawing all the visuals for the menu
     def draw(self, screen):
         if self.menu:
             screen.blit(self.bg_img, (0, 0))
 
+            # The button
             self.text_surf   = self.btn_font.render("LEVELS", True, (255, 255, 255))
             self.shadow_surf = self.btn_font.render("LEVELS", True, (180, 140, 30))
             text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
@@ -287,7 +289,9 @@ class MenuState(State):
 
             self._draw_button(screen)
 
-        elif self.menu == False:
+        elif self.menu == False: 
+
+            # Background and Title
             screen.blit(self.bg_img, (0, 0))
 
             self.text_surf   = self.btn_font.render("1", True, (255, 255, 255))
@@ -300,6 +304,7 @@ class MenuState(State):
         pygame.display.flip()
         self.game.clock.tick(60)
 
+    # func to help create a button
     def _draw_button(self, surf):
         r = self.btn_rect
         RADIUS = self.RADIUS
