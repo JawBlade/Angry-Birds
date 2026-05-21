@@ -241,16 +241,21 @@ class MenuState(State):
         self.CREAM      = (255, 245, 210)
         self.RADIUS     = 18
 
+    # Checks what buttons are being pressed and what to do when they are
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.game.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.btn_rect.collidepoint(event.pos):
+            if self.level_1_rect.collidepoint(event.pos):
 
                 if self.menu == False:
                     self.game.change_state(PlayingState(self.game))
 
                 self.menu = False
+            elif self.back_rect.collidepoint(event.pos):
+                if self.menu == False:
+                    self.game.change_state(MenuState(self.game))
+
 
     def update(self):
         # The logic to animate the play button
@@ -272,41 +277,50 @@ class MenuState(State):
         elif self.menu == False:
             BTN_W, BTN_H = (75 , 90)
 
-        self.btn_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
+        # Need to make a rect for each button
+        self.level_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
+        self.level_1_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
+        self.back_rect = pygame.Rect(20, 20, BTN_W + 20, BTN_H - 20)
 
-        self.btn_font = pygame.font.Font('C:/Users/vicbe\OneDrive\Desktop\Projects\Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
+
+        self.level_font = pygame.font.Font('C:/Users/vicbe\OneDrive\Desktop\Projects\Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
+        self.back_font = pygame.font.Font('C:/Users/vicbe\OneDrive\Desktop\Projects\Angry-Birds/angrybirds/angrybirds-regular.ttf', int(20))
+
 
     # Drawing all the visuals for the menu
     def draw(self, screen):
         if self.menu:
             screen.blit(self.bg_img, (0, 0))
 
-            # The button
-            self.text_surf   = self.btn_font.render("LEVELS", True, (255, 255, 255))
-            self.shadow_surf = self.btn_font.render("LEVELS", True, (180, 140, 30))
-            text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
-            screen.blit(text_surface, (425, 100))
+            self.draw_button(screen, self.level_rect, "LEVELS") # Level button
 
-            self._draw_button(screen)
-
-        elif self.menu == False: 
-
-            # Background and Title
-            screen.blit(self.bg_img, (0, 0))
-
-            self.text_surf   = self.btn_font.render("1", True, (255, 255, 255))
-            self.shadow_surf = self.btn_font.render("1", True, (180, 140, 30))
+            # The Title
             text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
             screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
 
-            self._draw_button(screen)
+        elif self.menu == False: 
+
+            # Background
+            screen.blit(self.bg_img, (0, 0))
+
+            self.draw_button(screen, self.level_1_rect, "1") # Level 1
+
+            self.draw_button(screen, self.back_rect, "BACK", 25) # back button
+
+            text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
+            screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
 
         pygame.display.flip()
         self.game.clock.tick(60)
 
     # func to help create a button
-    def _draw_button(self, surf):
-        r = self.btn_rect
+    def draw_button(self, surf, rect, text, font_size=int(44)):
+        font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', font_size)
+        self.level_rect = rect
+        self.text_surf = font.render(text, True, (255, 255, 255))
+        self.shadow_surf = font.render(text, True, (180, 140, 30))
+        
+        r = self.level_rect
         RADIUS = self.RADIUS
 
         pygame.draw.rect(surf, self.GOLD_DARK, r, border_radius=RADIUS)
