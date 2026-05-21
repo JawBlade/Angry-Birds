@@ -15,11 +15,12 @@ def image(path : str, size : tuple, alpha=True):
     return img
 
 class Box:
-    def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None):
+    def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None, health= 100):
         self.size = size
         self.pos = pos
         self._image_original = None
-        self._cached_img = None
+        self._cached_img     = None
+        self.health = health
 
         if image_surf is not None:
             self._image_original = image_surf
@@ -33,6 +34,7 @@ class Box:
         body.position = self.pos
 
         box = pymunk.Poly.create_box(body, self.size, radius=2)
+        box.collision_type = 2
         box.friction = 0.3
 
         space.add(body, box)
@@ -57,3 +59,11 @@ class Box:
         rect = img_rotated.get_rect(center=(int(x), int(y)))
 
         screen.blit(img_rotated, rect.topleft)
+    
+    def remove(self, body, space):
+        shapes = list(body.shapes)
+        for shape in shapes:
+            if shape in space.shapes:
+                space.remove(shape)
+        if body in space.bodies:
+            space.remove(body)

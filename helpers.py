@@ -7,16 +7,25 @@ from objects import Box
 
 # Adds all the boxes within the array of boxes in our space/level
 def make_box(size : tuple, pos : tuple, space, image_path="images/box.jpeg"):
+
     body = Box(size, pos, image_path=image_path)
+
+    if body.health <= 50:
+        body.image_path = 'images/box_50hp.jpeg'
+
     return [body, body.create(space)]
 
-def respawn(red):
+def respawn(red, lives):
     red.velocity = (0, 0)
     red.angular_velocity = 0
     red.angle = 0
-    red.position = (225, 410)
     
-    return False, False, True, False
+    if lives < 0:
+        red.position = (1500, 500)
+        return False, False, False, False
+    else:
+        red.position = (225, 410)
+        return False, False, True, False
 
 def distance(p1, p2):
     return math.sqrt((p2[0] - p1[0]) **2 + (p2[1] - p1[1]) **2)

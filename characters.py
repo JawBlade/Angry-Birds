@@ -4,7 +4,7 @@ import pygame
 
 
 class characters:
-    def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7):
+    def __init__(self, mass : int, radius : int, pos : tuple, image_path: str = None, image_surf: pygame.Surface = None, offset=(0,0), scale_mult= 2.7, health= 100):
         self.mass = mass
         self.radius = radius
         self.pos = pos
@@ -12,6 +12,7 @@ class characters:
         self.scale_mult = scale_mult
         self._cached_img = None 
         self._image_original = None
+        self.health = health
 
         if image_surf is not None:
             self._image_original = image_surf
@@ -29,6 +30,7 @@ class characters:
         body.position = self.pos
 
         circle = pymunk.Circle(body, radius)
+        circle.collision_type = 1
         circle.friction = 1
         circle.color = (213, 39, 42, 255)
         
@@ -64,12 +66,27 @@ class characters:
 
         rect = img_rotated.get_rect(center=(x, y))
         screen.blit(img_rotated, rect)
+        
+    def remove(self, body, space):
+        shapes = list(body.shapes)
+        for shape in shapes:
+            if shape in space.shapes:
+                space.remove(shape)
+        if body in space.bodies:
+            space.remove(body)
 
 
 class Bird(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/red2webp"):
-        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7)
+        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7, health= None)
 
 class Pig(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/pig.webp"):
         super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(0, -3), scale_mult=2.4)
+
+    def create(self, space):
+        body = super().create(space)
+        # Override collision type set by parent
+        for shape in body.shapes:
+            shape.collision_type = 3
+        return body
