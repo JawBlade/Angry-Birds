@@ -156,7 +156,7 @@ class PlayingState(State):
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
 
         # If the bird is off screen, respawn the bird.
-        elif bird_x >= 1300 and bird_y >= 500:
+        elif (bird_x >= 1300 and bird_y >= 500) or (bird_x <= -400 and bird_y >= -1300) :
             if self.released:
                 self.LIVES -= 1
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)

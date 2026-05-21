@@ -20,7 +20,7 @@ def respawn(red, lives):
     red.angular_velocity = 0
     red.angle = 0
     
-    if lives < 0:
+    if lives <= 0:
         red.position = (1500, 500)
         return False, False, False, False
     else:
