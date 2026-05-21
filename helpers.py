@@ -10,9 +10,6 @@ def make_box(size : tuple, pos : tuple, space, image_path="images/box.jpeg"):
 
     body = Box(size, pos, image_path=image_path)
 
-    if body.health <= 50:
-        body.image_path = 'images/box_50hp.jpeg'
-
     return [body, body.create(space)]
 
 def respawn(red, lives):

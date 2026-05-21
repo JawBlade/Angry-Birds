@@ -3,10 +3,10 @@ import math
 from tkinter import font
 import pygame
 import pymunk
-from objects import image
+from objects import image, Box
 import pymunk.pygame_util
 from characters import Pig, Bird
-from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels, distance
+from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels
 
 class State:
     def __init__(self, game):
@@ -36,6 +36,8 @@ class PlayingState(State):
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 
         self.space.on_collision(1, 2, post_solve=self.on_hit) # Handles the collision between bird and boxes.
+
+        self.space.on_collision(2, 3, post_solve=self.on_hit) # Handles the collision between boxes and pigs.
 
         self.space.on_collision(1, 3, post_solve=self.on_hit) # Handles collisions between birds and pigs.
 
@@ -163,7 +165,16 @@ class PlayingState(State):
 
         clamp_vels(self.space) # Forgot what this does but Ik it's important.
 
-        # Goes through all the objects and checks their health to deteremine if thir dead.
+        # Logic that switches sprites
+        for body, obj in self.entities.items():
+            if obj.health is not None and obj.health <= 50:
+                if isinstance(obj, Box):
+                    obj._image_original = pygame.image.load('images/box_50hp.jpeg').convert_alpha()
+                    obj._cached_img = None
+                elif isinstance(obj, Pig):
+                    obj._image_original = pygame.image.load('images/50hp_pig.webp').convert_alpha()
+                    obj._cached_img = None
+
         dead = [body for body, obj in self.entities.items() if obj.health is not None and obj.health <= 0]
         
         # Actually get rid of them on screen.
