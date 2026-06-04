@@ -21,6 +21,38 @@ class State:
     def draw(self, screen):
         pass
 
+    # func to help create a button
+    def draw_button(self, surf, rect, text, font_size=int(44)):
+        
+        self.GOLD_DARK  = (210, 140,  10)
+        self.GOLD_MID   = (240, 175,  20)
+        self.GOLD_LIGHT = (255, 210,  80)
+        self.CREAM      = (255, 245, 210)
+
+        font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', font_size)
+        self.level_rect = rect
+        self.text_surf = font.render(text, True, (255, 255, 255))
+        self.shadow_surf = font.render(text, True, (180, 140, 30))
+        
+        r = self.level_rect
+        RADIUS = 18
+
+        pygame.draw.rect(surf, self.GOLD_DARK, r, border_radius=RADIUS)
+
+        inner = r.inflate(-6, -6)
+        pygame.draw.rect(surf, self.GOLD_MID, inner, border_radius=RADIUS - 2)
+
+        rim = inner.inflate(-6, -6)
+        pygame.draw.rect(surf, self.CREAM, rim, border_radius=RADIUS - 4)
+
+        fill = rim.inflate(-8, -8)
+        pygame.draw.rect(surf, self.GOLD_MID, fill, border_radius=RADIUS - 6)
+
+        tx = r.centerx - self.text_surf.get_width() // 2
+        ty = r.centery - self.text_surf.get_height() // 2 - 2
+        for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
+            surf.blit(self.shadow_surf, (tx + dx, ty + dy))
+        surf.blit(self.text_surf, (tx, ty))
 
 class PlayingState(State):
     def __init__(self, game):
@@ -73,9 +105,13 @@ class PlayingState(State):
         self.SLING_POS = (225, 410)
         self.LIVES = 3
 
+        #Pause Button 
+        #                                x    y   W    H
+        self.Pause_Button = pygame.Rect(20, 12, 65, 65)
+
         # Shows how many lives u got.
         self.life_display = []
-        for i in range(self.LIVES):
+        for i in range(self.LIVES -1):
             life_counter = image('images/red2.webp', (64, 64))
             self.life_display.append(life_counter)
 
@@ -113,6 +149,10 @@ class PlayingState(State):
 
             if grab(self.mouse_pos, self.red, self.released, self.launch):
                 self.dragging = True
+
+            # For the Pause button
+            if self.Pause_Button.collidepoint(event.pos):
+                self.game.change_state(PausedState(self.game))
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -194,10 +234,12 @@ class PlayingState(State):
         screen.blit(self.bg_img, (0, 0))
 
         # lives
-        gap = 10
-        for i in range(self.LIVES):
+        gap = 100
+        for i in range(min(self.LIVES - 1, len(self.life_display))):
             screen.blit(self.life_display[i], (gap, 10))
             gap += 70
+        
+        self.draw_button(screen, self.Pause_Button, "II", font_size=35) # Level button
 
         if self.dragging:
             create_band(screen, self.band, (257, 413), self.attach_point)
@@ -245,12 +287,6 @@ class MenuState(State):
 
         self.font_size = 44
         self.menu = True
-        
-        self.GOLD_DARK  = (210, 140,  10)
-        self.GOLD_MID   = (240, 175,  20)
-        self.GOLD_LIGHT = (255, 210,  80)
-        self.CREAM      = (255, 245, 210)
-        self.RADIUS     = 18
 
     # Checks what buttons are being pressed and what to do when they are
     def handle_event(self, event):
@@ -294,8 +330,8 @@ class MenuState(State):
         self.back_rect = pygame.Rect(20, 20, BTN_W + 20, BTN_H - 20)
 
 
-        self.level_font = pygame.font.Font('C:/Users/vicbe\OneDrive\Desktop\Projects\Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
-        self.back_font = pygame.font.Font('C:/Users/vicbe\OneDrive\Desktop\Projects\Angry-Birds/angrybirds/angrybirds-regular.ttf', int(20))
+        self.level_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
+        self.back_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(20))
 
 
     # Drawing all the visuals for the menu
@@ -324,45 +360,33 @@ class MenuState(State):
         pygame.display.flip()
         self.game.clock.tick(60)
 
-    # func to help create a button
-    def draw_button(self, surf, rect, text, font_size=int(44)):
-        font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', font_size)
-        self.level_rect = rect
-        self.text_surf = font.render(text, True, (255, 255, 255))
-        self.shadow_surf = font.render(text, True, (180, 140, 30))
-        
-        r = self.level_rect
-        RADIUS = self.RADIUS
-
-        pygame.draw.rect(surf, self.GOLD_DARK, r, border_radius=RADIUS)
-
-        inner = r.inflate(-6, -6)
-        pygame.draw.rect(surf, self.GOLD_MID, inner, border_radius=RADIUS - 2)
-
-        rim = inner.inflate(-6, -6)
-        pygame.draw.rect(surf, self.CREAM, rim, border_radius=RADIUS - 4)
-
-        fill = rim.inflate(-8, -8)
-        pygame.draw.rect(surf, self.GOLD_MID, fill, border_radius=RADIUS - 6)
-
-        tx = r.centerx - self.text_surf.get_width() // 2
-        ty = r.centery - self.text_surf.get_height() // 2 - 2
-        for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
-            surf.blit(self.shadow_surf, (tx + dx, ty + dy))
-        surf.blit(self.text_surf, (tx, ty))
-    
 class PausedState(State):
     def __init__(self, game):
         super().__init__(game)
+        
+        self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
+        self.screen = self.game.screen
+        self.clock = self.game.clock
 
     def handle_event(self, event):
-        pass
+        if event.type == pygame.QUIT:
+            self.game.running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.game.change_state(PlayingState(self.game))
+            pass
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            pass
 
     def update(self):
         pass
 
     def draw(self, screen):
-        pass
+        pygame.draw.rect(screen, (0, 0, 255), (0, 0, 300, self.HEIGHT))
+
+        pygame.display.flip()
+        self.clock.tick(60)
     
 class GameoverState(State):
     def __init__(self, game):

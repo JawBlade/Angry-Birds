@@ -11,7 +11,7 @@ class Game:
         
         self.state = MenuState(self)
         
-        self.font = pygame.font.Font('C:/Users/vicbe\OneDrive\Desktop\Projects\Angry-Birds/angrybirds/angrybirds-regular.ttf', 90)
+        self.font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', 90)
 
     def change_state(self, new_state):
         self.state = new_state
