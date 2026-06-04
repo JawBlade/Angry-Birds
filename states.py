@@ -22,7 +22,7 @@ class State:
         pass
 
     # func to help create a button
-    def draw_button(self, surf, rect, text, font_size=int(44)):
+    def draw_button(self, surf, rect, text, font_size=int(44), icon_path=None):
         
         self.GOLD_DARK  = (210, 140,  10)
         self.GOLD_MID   = (240, 175,  20)
@@ -53,6 +53,22 @@ class State:
         for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
             surf.blit(self.shadow_surf, (tx + dx, ty + dy))
         surf.blit(self.text_surf, (tx, ty))
+
+        # Claude Did this for me
+        if icon_path:
+            icon = pygame.image.load(icon_path).convert_alpha()
+            # Scale to fit inside the button with some padding
+            icon_size = min(rect.height - 20, rect.width - 20)
+            icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))
+            icon_rect = icon.get_rect(center=rect.center)
+            surf.blit(icon, icon_rect)
+        else:
+            # your existing text drawing code
+            tx = r.centerx - self.text_surf.get_width() // 2
+            ty = r.centery - self.text_surf.get_height() // 2 - 2
+            for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
+                surf.blit(self.shadow_surf, (tx + dx, ty + dy))
+            surf.blit(self.text_surf, (tx, ty))
 
 class PlayingState(State):
     def __init__(self, game):
@@ -106,7 +122,7 @@ class PlayingState(State):
         self.LIVES = 3
 
         #Pause Button 
-        #                                x    y   W    H
+        #                                x  y   W   H
         self.Pause_Button = pygame.Rect(20, 12, 65, 65)
 
         # Shows how many lives u got.
@@ -152,7 +168,7 @@ class PlayingState(State):
 
             # For the Pause button
             if self.Pause_Button.collidepoint(event.pos):
-                self.game.change_state(PausedState(self.game))
+                self.game.change_state(PausedState(self.game, self))
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -239,7 +255,7 @@ class PlayingState(State):
             screen.blit(self.life_display[i], (gap, 10))
             gap += 70
         
-        self.draw_button(screen, self.Pause_Button, "II", font_size=35) # Level button
+        self.draw_button(screen, self.Pause_Button, "II", font_size=35) # Pause button
 
         if self.dragging:
             create_band(screen, self.band, (257, 413), self.attach_point)
@@ -361,20 +377,29 @@ class MenuState(State):
         self.game.clock.tick(60)
 
 class PausedState(State):
-    def __init__(self, game):
+    def __init__(self, game, previous_playing_state):
         super().__init__(game)
+
+        self.previous_state = previous_playing_state
         
         self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
         self.screen = self.game.screen
         self.clock = self.game.clock
+
+        # Button Rects
+        self.Play_Button    = pygame.Rect(60, 10, 85, 85) # Play
+        self.Restart_Button = pygame.Rect(90, 150, 85, 85) # restart
+        self.Level_Button   = pygame.Rect(90, 350, 85, 85) # Level Menu
+
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.game.running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            self.game.change_state(PlayingState(self.game))
-            pass
+            
+            if self.Play_Button.collidepoint(event.pos):
+                self.game.change_state(self.previous_state)
 
         if event.type == pygame.MOUSEBUTTONUP:
             pass
@@ -384,6 +409,10 @@ class PausedState(State):
 
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 0, 255), (0, 0, 300, self.HEIGHT))
+
+        self.draw_button(screen, self.Play_Button, "", font_size=35, icon_path="images/play-button.png")
+        self.draw_button(screen, self.Restart_Button, "", font_size=35, icon_path="images/arrow-outline.png")
+        self.draw_button(screen, self.Level_Button, "", font_size=35, icon_path="images/hamburger.png")
 
         pygame.display.flip()
         self.clock.tick(60)
