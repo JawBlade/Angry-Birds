@@ -5,7 +5,7 @@ class Game:
     def __init__(self):
         pygame.init()
         self.WIDTH, self.HEIGHT = (1280, 720)
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
         self.clock = pygame.time.Clock()
         self.running = True
         
@@ -22,6 +22,9 @@ class Game:
                 self.state.handle_event(event)
             self.state.update()
             self.state.draw(self.screen)
+
+            pygame.display.flip()  # ← add this
+            self.clock.tick(60)
 
 if __name__ == "__main__":
     game = Game()

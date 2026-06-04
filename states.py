@@ -273,9 +273,6 @@ class PlayingState(State):
         for body, box in self.boxes:
             body.mask(screen, box)
 
-        pygame.display.flip()
-        self.clock.tick(60)
-
     # Checks if the impules is above a threshold to damget eh obj based on the impulse.
     def on_hit(self, arbiter, space, data):
         impulse = arbiter.total_impulse.length
@@ -373,8 +370,6 @@ class MenuState(State):
             text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
             screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
 
-        pygame.display.flip()
-        self.game.clock.tick(60)
 
 class PausedState(State):
     def __init__(self, game, previous_playing_state):
@@ -388,9 +383,16 @@ class PausedState(State):
 
         # Button Rects
         self.Play_Button    = pygame.Rect(60, 10, 85, 85) # Play
-        self.Restart_Button = pygame.Rect(90, 150, 85, 85) # restart
-        self.Level_Button   = pygame.Rect(90, 350, 85, 85) # Level Menu
+        self.Restart_Button = pygame.Rect(130, 170, 85, 85) # restart
+        self.Level_Button   = pygame.Rect(130, 350, 85, 85) # Level Menu
 
+        self.invis_rect = pygame.Surface((300, self.HEIGHT))
+        self.invis_rect.fill((17,17,132))
+        self.invis_rect.set_alpha(200)
+
+        self.invis_rect_back = pygame.Surface((self.WIDTH, self.HEIGHT))
+        self.invis_rect_back.fill((0,0,0))
+        self.invis_rect_back.set_alpha(150)
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
@@ -401,6 +403,15 @@ class PausedState(State):
             if self.Play_Button.collidepoint(event.pos):
                 self.game.change_state(self.previous_state)
 
+            elif self.Restart_Button.collidepoint(event.pos):
+                self.game.change_state(PlayingState(self.game))
+
+            elif self.Level_Button.collidepoint(event.pos):
+                paused = MenuState(self.game)
+                
+                paused.menu = False
+                self.game.change_state(paused)
+
         if event.type == pygame.MOUSEBUTTONUP:
             pass
 
@@ -408,7 +419,10 @@ class PausedState(State):
         pass
 
     def draw(self, screen):
-        pygame.draw.rect(screen, (0, 0, 255), (0, 0, 300, self.HEIGHT))
+        self.previous_state.draw(screen)
+
+        screen.blit(self.invis_rect_back, (0,0))
+        screen.blit(self.invis_rect, (0,0))
 
         self.draw_button(screen, self.Play_Button, "", font_size=35, icon_path="images/play-button.png")
         self.draw_button(screen, self.Restart_Button, "", font_size=35, icon_path="images/arrow-outline.png")
