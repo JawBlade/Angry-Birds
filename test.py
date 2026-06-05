@@ -1,20 +1,17 @@
-import pygame
+import time
 
-pygame.init()
-screen = pygame.display.set_mode((600, 400))
-clock = pygame.time.Clock()
+# Start the timer
+start_time = time.perf_counter()
 
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
+# --- Put the code you want to time here ---
+total = 0
+for i in range(4):
+    total += i
+# ------------------------------------------
 
-    screen.fill((100, 200, 100))  # green background
+# End the timer
+end_time = time.perf_counter()
 
-    overlay = pygame.Surface((200, 200))
-    overlay.fill((0, 0, 255))
-    overlay.set_alpha(100)
-    screen.blit(overlay, (200, 100))
-
-    pygame.display.flip()
-    clock.tick(60)
+# Calculate elapsed time in seconds
+execution_time = end_time - start_time
+print(f"Execution time: {execution_time:.6f} seconds")

@@ -7,6 +7,7 @@ from objects import image, Box
 import pymunk.pygame_util
 from characters import Pig, Bird
 from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels
+import time
 
 class State:
     def __init__(self, game):
@@ -101,6 +102,14 @@ class PlayingState(State):
         floor.color = (103, 177, 20, 0)
         self.space.add(floor)
 
+        right_wall = pymunk.Segment(self.space.static_body, (1280, -1000), (1280, 1000), 1)
+        right_wall.friction = 1
+        self.space.add(right_wall)
+
+        left_wall = pymunk.Segment(self.space.static_body, (0, -1000), (0, 1000), 1)
+        left_wall.friction = 1
+        self.space.add(left_wall)
+
         # Setting up the bird, rubber band and pigs.
         self.red_body = Bird(0.6, 27, (225, 410), image_path="images/red2.webp")
         self.red = self.red_body.create(self.space)
@@ -141,6 +150,10 @@ class PlayingState(State):
         for box_obj, box_body in self.boxes:
             self.entities[box_body] = box_obj
 
+        
+        self.start_time = time.perf_counter() # To add a Higher score if you finsh the level faster.
+        self.score = 0
+
     # This handles like all the inputs for the game.
     def handle_event(self, event):
         if event.type == pygame.QUIT:
@@ -168,6 +181,7 @@ class PlayingState(State):
 
             # For the Pause button
             if self.Pause_Button.collidepoint(event.pos):
+                print(self.score)
                 self.game.change_state(PausedState(self.game, self))
 
         if event.type == pygame.MOUSEBUTTONUP:
@@ -235,6 +249,14 @@ class PlayingState(State):
         
         # Actually get rid of them on screen.
         for body in dead:
+            obj = self.entities[body]
+
+            #Increases score when box breaks or pig dies
+            if type(obj).__name__ == 'Pig':
+                self.score += 3000
+            elif type(obj).__name__ == 'Box':
+                self.score += 1000
+            
             self.entities[body].remove(body, self.space)
             self.boxes = [[obj, b] for obj, b in self.boxes if b != body]
             del self.entities[body]
@@ -414,9 +436,6 @@ class PausedState(State):
 
         if event.type == pygame.MOUSEBUTTONUP:
             pass
-
-    def update(self):
-        pass
 
     def draw(self, screen):
         self.previous_state.draw(screen)
