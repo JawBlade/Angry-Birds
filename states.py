@@ -1,4 +1,3 @@
-import os
 import math
 from tkinter import font
 import pygame
@@ -7,6 +6,7 @@ from objects import image, Box
 import pymunk.pygame_util
 from characters import Pig, Bird
 from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels
+from levels import LEVELS
 import time
 
 class State:
@@ -72,8 +72,12 @@ class State:
             surf.blit(self.text_surf, (tx, ty))
 
 class PlayingState(State):
-    def __init__(self, game):
+    def __init__(self, game, level_num=1):
         super().__init__(game)
+
+        self.level_num = level_num
+        level_data = LEVELS[level_num]
+
 
         self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
         self.screen = self.game.screen
@@ -91,8 +95,8 @@ class PlayingState(State):
         self.space.on_collision(1, 3, post_solve=self.on_hit) # Handles collisions between birds and pigs.
 
         self.boxes = [
-            make_box((40, 100), (1125, 517), self.space),
-            make_box((40, 100), (1000, 517), self.space),
+            make_box(b["size"], b["pos"], self.space)
+            for b in level_data["boxes"]
         ]
 
         floor_body = self.space.static_body
@@ -117,9 +121,12 @@ class PlayingState(State):
         self.band = pygame.Surface((10, 20), pygame.SRCALPHA)
         self.band.fill((159, 26, 13))
 
-        self.pig_b = Pig(1, 27, (1063, 540), image_path="images/pig.webp")
-        self.pig = self.pig_b.create(self.space)
-
+        self.pigs = []
+        for p in level_data["pigs"]:
+            pig_b = Pig(p["mass"], p["radius"], p["pos"], image_path="images/pig.webp")
+            pig = pig_b.create(self.space)
+            self.pigs.append((pig_b, pig))
+        
         # Normal vars for logic.
         self.released = False
         self.mouse_pos = (0, 0)
@@ -128,8 +135,9 @@ class PlayingState(State):
         self.launch = False
         self.MAX_PULL = 120
         self.SLING_POS = (225, 410)
-        self.LIVES = 3
+        self.LIVES = level_data["lives"]
         self.end = False
+        self.show_end_button = False
 
         #Pause Button 
         #                                x  y   W   H
@@ -149,7 +157,8 @@ class PlayingState(State):
 
         # Fliping the values bc i named them wrong
         self.entities = {}
-        self.entities[self.pig] = self.pig_b
+        for pig_b, pig in self.pigs:
+            self.entities[pig] = pig_b
         for box_obj, box_body in self.boxes:
             self.entities[box_body] = box_obj
 
@@ -185,7 +194,8 @@ class PlayingState(State):
             # For the Pause button
             if self.Pause_Button.collidepoint(event.pos):
                 self.game.change_state(PausedState(self.game, self))
-            elif self.End_Button.collidepoint(event.pos):
+            elif self.show_end_button and self.End_Button.collidepoint(event.pos):
+                self.show_end_button = False
                 self.game.change_state(GameoverState(self.game, self))
 
         if event.type == pygame.MOUSEBUTTONUP:
@@ -240,6 +250,9 @@ class PlayingState(State):
                 self.LIVES -= 1
             self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
 
+        if self.pig_count == 0 or self.LIVES == 0:
+            self.show_end_button = True
+
         clamp_vels(self.space) # Forgot what this does but Ik it's important.
 
         # Logic that switches sprites
@@ -278,7 +291,7 @@ class PlayingState(State):
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
 
-        if self.pig_count == 0 or self.LIVES == 0:
+        if self.show_end_button:
             self.draw_button(screen, self.End_Button, "END LEVEL", font_size=30)
 
         # lives
@@ -303,8 +316,9 @@ class PlayingState(State):
             create_band(screen, self.band, (197, 418), self.attach_point)
 
         screen.blit(self.sling_l, (75, 320))
-        if self.pig in self.entities:
-            self.pig_b.mask(screen, self.pig)
+        for pig_b, pig in self.pigs:
+            if pig in self.entities:
+                pig_b.mask(screen, pig)
 
         for body, box in self.boxes:
             body.mask(screen, box)
@@ -337,19 +351,25 @@ class MenuState(State):
         self.font_size = 44
         self.menu = True
 
+        # Build one rect per level in LEVELS
+        self.level_count = len(LEVELS)
+        self.level_rects = []
+
     # Checks what buttons are being pressed and what to do when they are
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.game.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.level_1_rect.collidepoint(event.pos):
-
-                if self.menu == False:
-                    self.game.change_state(PlayingState(self.game))
-
-                self.menu = False
-            elif self.back_rect.collidepoint(event.pos):
-                if self.menu == False:
+            if self.menu:
+                if self.level_1_rect.collidepoint(event.pos):
+                    self.menu = False
+            else:
+                # Check each level button
+                for i, rect in enumerate(self.level_rects):
+                    if rect.collidepoint(event.pos):
+                        self.game.change_state(PlayingState(self.game, level_num=i + 1))
+                        return
+                if self.back_rect.collidepoint(event.pos):
                     self.game.change_state(MenuState(self.game))
 
 
@@ -378,6 +398,15 @@ class MenuState(State):
         self.level_1_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
         self.back_rect = pygame.Rect(20, 20, BTN_W + 20, BTN_H - 20)
 
+        # Build rects for each level button, laid out in a row centred on screen
+        BTN_SIZE = 75
+        GAP = 20
+        total_width = self.level_count * BTN_SIZE + (self.level_count - 1) * GAP
+        start_x = (1280 - total_width) // 2
+        self.level_rects = [
+            pygame.Rect(start_x + i * (BTN_SIZE + GAP), (720 - BTN_SIZE) // 2, BTN_SIZE, BTN_SIZE)
+            for i in range(self.level_count)
+        ]
 
         self.level_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
         self.back_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(20))
@@ -399,7 +428,9 @@ class MenuState(State):
             # Background
             screen.blit(self.bg_img, (0, 0))
 
-            self.draw_button(screen, self.level_1_rect, "1") # Level 1
+            # Draw a button for each level
+            for i, rect in enumerate(self.level_rects):
+                self.draw_button(screen, rect, str(i + 1))
 
             self.draw_button(screen, self.back_rect, "BACK", 25) # back button
 
@@ -407,6 +438,9 @@ class MenuState(State):
             screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
 
 
+# I had claude make a better looking menu for the pause and game over state but i programmed 
+# all the logic i also descreiibed exaclty how i wanted the menu. I just didnt want to waste 
+# time on programming it myself, when I knew claude could do it.
 class PausedState(State):
     def __init__(self, game, previous_playing_state):
         super().__init__(game)
@@ -417,17 +451,24 @@ class PausedState(State):
         self.screen = self.game.screen
         self.clock = self.game.clock
 
-        # Button Rects
-        self.Play_Button    = pygame.Rect(60, 10, 85, 85) # Play
-        self.Restart_Button = pygame.Rect(130, 170, 85, 85) # restart
-        self.Level_Button   = pygame.Rect(130, 350, 85, 85) # Level Menu
+        panel_w, panel_h = 400, 350
+        self.panel_rect = pygame.Rect(
+            (self.WIDTH - panel_w) // 2,
+            (self.HEIGHT - panel_h) // 2,
+            panel_w, panel_h
+        )
 
-        self.invis_rect = pygame.Surface((300, self.HEIGHT))
-        self.invis_rect.fill((17,17,132))
-        self.invis_rect.set_alpha(200)
+        btn_y = self.panel_rect.bottom - 110
+        btn_size = 85
+        spacing = 110
+        center_x = self.WIDTH // 2
+
+        self.Play_Button    = pygame.Rect(center_x - spacing - btn_size // 2, btn_y, btn_size, btn_size)
+        self.Restart_Button = pygame.Rect(center_x - btn_size // 2,           btn_y, btn_size, btn_size)
+        self.Level_Button   = pygame.Rect(center_x + spacing - btn_size // 2, btn_y, btn_size, btn_size)
 
         self.invis_rect_back = pygame.Surface((self.WIDTH, self.HEIGHT))
-        self.invis_rect_back.fill((0,0,0))
+        self.invis_rect_back.fill((0, 0, 0))
         self.invis_rect_back.set_alpha(150)
 
     def handle_event(self, event):
@@ -435,45 +476,110 @@ class PausedState(State):
             self.game.running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            
             if self.Play_Button.collidepoint(event.pos):
                 self.game.change_state(self.previous_state)
+            elif self.Restart_Button.collidepoint(event.pos):
+                self.game.change_state(PlayingState(self.game))
+            elif self.Level_Button.collidepoint(event.pos):
+                paused = MenuState(self.game)
+                paused.menu = False
+                self.game.change_state(paused)
+
+    def draw(self, screen):
+        self.previous_state.draw(screen)
+
+        screen.blit(self.invis_rect_back, (0, 0))
+
+        pygame.draw.rect(screen, (17, 17, 132), self.panel_rect, border_radius=20)
+        pygame.draw.rect(screen, (255, 210, 80), self.panel_rect, width=4, border_radius=20)
+
+        title_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 52)
+        title = title_font.render("PAUSED", True, (255, 210, 80))
+        screen.blit(title, (self.panel_rect.centerx - title.get_width() // 2, self.panel_rect.top + 40))
+
+        self.draw_button(screen, self.Play_Button,    "", font_size=35, icon_path="images/play-button.png")
+        self.draw_button(screen, self.Restart_Button, "", font_size=35, icon_path="images/arrow-outline.png")
+        self.draw_button(screen, self.Level_Button,   "", font_size=35, icon_path="images/hamburger.png")
+
+        pygame.display.flip()
+        self.clock.tick(60)
+
+class GameoverState(State):
+    def __init__(self, game, previous_playing_state):
+        super().__init__(game)
+
+        self.previous_state = previous_playing_state
+        
+        self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
+        self.screen = self.game.screen
+        self.clock = self.game.clock
+
+        self.invis_rect_back = pygame.Surface((self.WIDTH, self.HEIGHT))
+        self.invis_rect_back.fill((0, 0, 0))
+        self.invis_rect_back.set_alpha(150)
+
+        # Central panel
+        panel_w, panel_h = 500, 350
+        self.panel_rect = pygame.Rect(
+            (self.WIDTH - panel_w) // 2,
+            (self.HEIGHT - panel_h) // 2,
+            panel_w, panel_h
+        )
+
+        
+        btn_y = self.panel_rect.bottom - 110
+        btn_size = 85
+        spacing = 130
+        center_x = self.WIDTH // 2
+
+        self.Level_Button   = pygame.Rect(center_x - spacing - btn_size // 2, btn_y, btn_size, btn_size)
+        self.Restart_Button = pygame.Rect(center_x - btn_size // 2,           btn_y, btn_size, btn_size)
+        self.Play_Button    = pygame.Rect(center_x + spacing - btn_size // 2, btn_y, btn_size, btn_size)
+
+    def handle_event(self, event):
+        if event.type == pygame.QUIT:
+            self.game.running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.Play_Button.collidepoint(event.pos):
+                self.game.change_state(PlayingState(self.game))
 
             elif self.Restart_Button.collidepoint(event.pos):
                 self.game.change_state(PlayingState(self.game))
 
             elif self.Level_Button.collidepoint(event.pos):
-                paused = MenuState(self.game)
-                
-                paused.menu = False
-                self.game.change_state(paused)
-
-        if event.type == pygame.MOUSEBUTTONUP:
-            pass
+                menu = MenuState(self.game)
+                menu.menu = False
+                self.game.change_state(menu)
 
     def draw(self, screen):
         self.previous_state.draw(screen)
+        screen.blit(self.invis_rect_back, (0, 0))
 
-        screen.blit(self.invis_rect_back, (0,0))
-        screen.blit(self.invis_rect, (0,0))
+        
+        pygame.draw.rect(screen, (17, 17, 132), self.panel_rect, border_radius=20)
+        pygame.draw.rect(screen, (255, 210, 80), self.panel_rect, width=4, border_radius=20)
 
-        self.draw_button(screen, self.Play_Button, "", font_size=35, icon_path="images/play-button.png")
+        score_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 52)
+        label_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 28)
+
+        
+        label = label_font.render("SCORE", True, (255, 210, 80))
+        score = score_font.render(str(self.previous_state.score + self.previous_state.LIVES * 500), True, (255, 255, 255))
+        screen.blit(label, (self.panel_rect.centerx - label.get_width() // 2, self.panel_rect.top + 30))
+        screen.blit(score, (self.panel_rect.centerx - score.get_width() // 2, self.panel_rect.top + 70))
+
+        # Pigs still alive message
+        pig_count = self.previous_state.pig_count
+        if pig_count > 0:
+            msg_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 22)
+            msg = msg_font.render("All pigs need to die to pass the level!", True, (255, 80, 80))
+            screen.blit(msg, (self.panel_rect.centerx - msg.get_width() // 2, self.panel_rect.top + 145))
+
+        
+        self.draw_button(screen, self.Level_Button,   "", font_size=35, icon_path="images/hamburger.png")
         self.draw_button(screen, self.Restart_Button, "", font_size=35, icon_path="images/arrow-outline.png")
-        self.draw_button(screen, self.Level_Button, "", font_size=35, icon_path="images/hamburger.png")
+        self.draw_button(screen, self.Play_Button,    "", font_size=35, icon_path="images/play-button.png")
 
         pygame.display.flip()
         self.clock.tick(60)
-    
-class GameoverState(State):
-    def __init__(self, game):
-        super().__init__(game)
-
-    def handle_event(self, event):
-        pass
-
-    def update(self):
-        pass
-
-    def draw(self, screen):
-        pass
-    
