@@ -129,10 +129,13 @@ class PlayingState(State):
         self.MAX_PULL = 120
         self.SLING_POS = (225, 410)
         self.LIVES = 3
+        self.end = False
 
         #Pause Button 
         #                                x  y   W   H
         self.Pause_Button = pygame.Rect(20, 12, 65, 65)
+
+        self.End_Button = pygame.Rect(self.game.WIDTH - 160, self.game.HEIGHT - 70, 150, 60)
 
         # Shows how many lives u got.
         self.life_display = []
@@ -181,8 +184,9 @@ class PlayingState(State):
 
             # For the Pause button
             if self.Pause_Button.collidepoint(event.pos):
-                print(self.score)
                 self.game.change_state(PausedState(self.game, self))
+            elif self.End_Button.collidepoint(event.pos):
+                self.game.change_state(GameoverState(self.game, self))
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -199,6 +203,9 @@ class PlayingState(State):
 
     # Updates all the vars that need to be updated and some logic.
     def update(self):
+
+        self.pig_count = sum(1 for obj in self.entities.values() if isinstance(obj, Pig))
+
         bird_x, bird_y = self.red.position
         self.mouse_pos = pygame.mouse.get_pos()
 
@@ -271,12 +278,19 @@ class PlayingState(State):
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
 
+        if self.pig_count == 0 or self.LIVES == 0:
+            self.draw_button(screen, self.End_Button, "END LEVEL", font_size=30)
+
         # lives
         gap = 100
         for i in range(min(self.LIVES - 1, len(self.life_display))):
             screen.blit(self.life_display[i], (gap, 10))
             gap += 70
         
+        # Display Score
+        text_surface = self.game.font.render(str(self.score), True, (0, 0, 0))
+        self.screen.blit(text_surface, (self.game.WIDTH - 210, 0))
+
         self.draw_button(screen, self.Pause_Button, "II", font_size=35) # Pause button
 
         if self.dragging:
