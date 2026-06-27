@@ -78,7 +78,7 @@ class characters:
 
 class Bird(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/red2webp"):
-        super().__init__(mass=mass, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7, health= None)
+        super().__init__(mass=1, radius=radius, pos=pos, image_path=image_path, image_surf=image_surf, offset=(-7, -5), scale_mult=2.7, health= None)
 
 class Pig(characters):
     def __init__(self, mass, radius, pos, image_surf=None, image_path="images/pig.webp"):

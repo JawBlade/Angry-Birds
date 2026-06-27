@@ -15,7 +15,7 @@ def image(path : str, size : tuple, alpha=True):
     return img
 
 class Box:
-    def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None, health= 100):
+    def __init__(self, size: tuple, pos: tuple, image_path: str = None, image_surf: pygame.Surface = None, health= 175):
         self.size = size
         self.pos = pos
         self._image_original = None
@@ -29,13 +29,14 @@ class Box:
 
     def create(self, space):
         # Make the rigid Body
-        body = pymunk.Body(mass=0.2, moment=10)
+        body = pymunk.Body(mass=0.7, moment=500)
 
         body.position = self.pos
 
         box = pymunk.Poly.create_box(body, self.size, radius=2)
         box.collision_type = 2
-        box.friction = 0.3
+        box.friction = 0.8
+        box.elasticity = 0.0
 
         space.add(body, box)
         

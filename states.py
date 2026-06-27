@@ -86,6 +86,7 @@ class PlayingState(State):
         self.space = pymunk.Space()
         self.space.gravity = (0, 900)
         self.space.damping = 0.65
+        self.space.iterations = 30 
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 
         self.space.on_collision(1, 2, post_solve=self.on_hit) # Handles the collision between bird and boxes.
@@ -115,7 +116,7 @@ class PlayingState(State):
         self.space.add(left_wall)
 
         # Setting up the bird, rubber band and pigs.
-        self.red_body = Bird(0.6, 27, (225, 410), image_path="images/red2.webp")
+        self.red_body = Bird(1, 27, (225, 410), image_path="images/red2.webp")
         self.red = self.red_body.create(self.space)
 
         self.band = pygame.Surface((10, 20), pygame.SRCALPHA)
@@ -281,7 +282,10 @@ class PlayingState(State):
             self.boxes = [[obj, b] for obj, b in self.boxes if b != body]
             del self.entities[body]
             
-        self.space.step(1.0 / 60.0)
+        dt = 1.0 / 60.0
+        steps = 3
+        for _ in range(steps):
+            self.space.step(dt / steps)
 
         dx, dy = bird_x - 225, bird_y - 410
         angle_to_bird = math.atan2(dy, dx)
@@ -329,7 +333,7 @@ class PlayingState(State):
         THRESHOLD = 30
 
         if impulse > THRESHOLD:
-            damage = impulse * 0.5
+            damage = impulse * 0.45
 
             for shape in arbiter.shapes:
                 body = shape.body
