@@ -14,7 +14,7 @@ This is a knock-off Angry Birds game built in Python using Pygame and Pymunk. Th
 
 **Level Select**
 
-![Level Select](menu.png)
+![Level Select](images\screenshots\menu.png)
 
 **Gameplay**
 
