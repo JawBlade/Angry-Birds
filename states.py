@@ -78,7 +78,6 @@ class PlayingState(State):
         self.level_num = level_num
         level_data = LEVELS[level_num]
 
-
         self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
         self.screen = self.game.screen
         self.clock = self.game.clock
@@ -127,7 +126,7 @@ class PlayingState(State):
             pig_b = Pig(p["mass"], p["radius"], p["pos"], image_path="images/pig.webp")
             pig = pig_b.create(self.space)
             self.pigs.append((pig_b, pig))
-        
+
         # Normal vars for logic.
         self.released = False
         self.mouse_pos = (0, 0)
@@ -163,7 +162,6 @@ class PlayingState(State):
         for box_obj, box_body in self.boxes:
             self.entities[box_body] = box_obj
 
-        
         self.start_time = time.perf_counter() # To add a Higher score if you finsh the level faster.
         self.score = 0
 
@@ -267,7 +265,7 @@ class PlayingState(State):
                     obj._cached_img = None
 
         dead = [body for body, obj in self.entities.items() if obj.health is not None and obj.health <= 0]
-        
+
         # Actually get rid of them on screen.
         for body in dead:
             obj = self.entities[body]
@@ -281,7 +279,7 @@ class PlayingState(State):
             self.entities[body].remove(body, self.space)
             self.boxes = [[obj, b] for obj, b in self.boxes if b != body]
             del self.entities[body]
-            
+
         dt = 1.0 / 60.0
         steps = 3
         for _ in range(steps):
@@ -290,7 +288,7 @@ class PlayingState(State):
         dx, dy = bird_x - 225, bird_y - 410
         angle_to_bird = math.atan2(dy, dx)
         self.attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
-    
+
     # Draws all the visuals
     def draw(self, screen):
         screen.blit(self.bg_img, (0, 0))
@@ -303,7 +301,7 @@ class PlayingState(State):
         for i in range(min(self.LIVES - 1, len(self.life_display))):
             screen.blit(self.life_display[i], (gap, 10))
             gap += 70
-        
+
         # Display Score
         text_surface = self.game.font.render(str(self.score), True, (0, 0, 0))
         self.screen.blit(text_surface, (self.game.WIDTH - 210, 0))
@@ -371,11 +369,12 @@ class MenuState(State):
                 # Check each level button
                 for i, rect in enumerate(self.level_rects):
                     if rect.collidepoint(event.pos):
-                        self.game.change_state(PlayingState(self.game, level_num=i + 1))
+                        level_num = i + 1
+                        if level_num == 1 or (level_num - 1) in self.game.completed_levels:
+                            self.game.change_state(PlayingState(self.game, level_num=level_num))
                         return
                 if self.back_rect.collidepoint(event.pos):
                     self.game.change_state(MenuState(self.game))
-
 
     def update(self):
         # The logic to animate the play button
@@ -415,7 +414,6 @@ class MenuState(State):
         self.level_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
         self.back_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(20))
 
-
     # Drawing all the visuals for the menu
     def draw(self, screen):
         if self.menu:
@@ -427,7 +425,7 @@ class MenuState(State):
             text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
             screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
 
-        elif self.menu == False: 
+        elif self.menu == False:
 
             # Background
             screen.blit(self.bg_img, (0, 0))
@@ -435,6 +433,11 @@ class MenuState(State):
             # Draw a button for each level
             for i, rect in enumerate(self.level_rects):
                 self.draw_button(screen, rect, str(i + 1))
+                level_num = i + 1
+                if level_num != 1 and (level_num - 1) not in self.game.completed_levels:
+                    dim = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                    dim.fill((0, 0, 0, 120))
+                    screen.blit(dim, rect.topleft)
 
             self.draw_button(screen, self.back_rect, "BACK", 25) # back button
 
@@ -483,7 +486,7 @@ class PausedState(State):
             if self.Play_Button.collidepoint(event.pos):
                 self.game.change_state(self.previous_state)
             elif self.Restart_Button.collidepoint(event.pos):
-                self.game.change_state(PlayingState(self.game))
+                self.game.change_state(PlayingState(self.game, level_num=self.previous_state.level_num))
             elif self.Level_Button.collidepoint(event.pos):
                 paused = MenuState(self.game)
                 paused.menu = False
@@ -513,6 +516,8 @@ class GameoverState(State):
         super().__init__(game)
 
         self.previous_state = previous_playing_state
+        self.level_num = previous_playing_state.level_num
+        self.pig_count = previous_playing_state.pig_count
         
         self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
         self.screen = self.game.screen
@@ -530,7 +535,6 @@ class GameoverState(State):
             panel_w, panel_h
         )
 
-        
         btn_y = self.panel_rect.bottom - 110
         btn_size = 85
         spacing = 130
@@ -546,10 +550,20 @@ class GameoverState(State):
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.Play_Button.collidepoint(event.pos):
-                self.game.change_state(PlayingState(self.game))
+                if self.pig_count == 0:
+                    self.game.completed_levels.add(self.level_num)
+                    next_level = self.level_num + 1
+                    if next_level in LEVELS:
+                        self.game.change_state(PlayingState(self.game, level_num=next_level))
+                    else:
+                        menu = MenuState(self.game)
+                        menu.menu = False
+                        self.game.change_state(menu)
+                else:
+                    self.game.change_state(PlayingState(self.game, level_num=self.level_num))
 
             elif self.Restart_Button.collidepoint(event.pos):
-                self.game.change_state(PlayingState(self.game))
+                self.game.change_state(PlayingState(self.game, level_num=self.level_num))
 
             elif self.Level_Button.collidepoint(event.pos):
                 menu = MenuState(self.game)
@@ -560,27 +574,23 @@ class GameoverState(State):
         self.previous_state.draw(screen)
         screen.blit(self.invis_rect_back, (0, 0))
 
-        
         pygame.draw.rect(screen, (17, 17, 132), self.panel_rect, border_radius=20)
         pygame.draw.rect(screen, (255, 210, 80), self.panel_rect, width=4, border_radius=20)
 
         score_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 52)
         label_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 28)
 
-        
         label = label_font.render("SCORE", True, (255, 210, 80))
         score = score_font.render(str(self.previous_state.score + self.previous_state.LIVES * 500), True, (255, 255, 255))
         screen.blit(label, (self.panel_rect.centerx - label.get_width() // 2, self.panel_rect.top + 30))
         screen.blit(score, (self.panel_rect.centerx - score.get_width() // 2, self.panel_rect.top + 70))
 
         # Pigs still alive message
-        pig_count = self.previous_state.pig_count
-        if pig_count > 0:
+        if self.pig_count > 0:
             msg_font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', 22)
             msg = msg_font.render("All pigs need to die to pass the level!", True, (255, 80, 80))
             screen.blit(msg, (self.panel_rect.centerx - msg.get_width() // 2, self.panel_rect.top + 145))
 
-        
         self.draw_button(screen, self.Level_Button,   "", font_size=35, icon_path="images/hamburger.png")
         self.draw_button(screen, self.Restart_Button, "", font_size=35, icon_path="images/arrow-outline.png")
         self.draw_button(screen, self.Play_Button,    "", font_size=35, icon_path="images/play-button.png")

@@ -8,6 +8,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
         self.clock = pygame.time.Clock()
         self.running = True
+        self.completed_levels = set()
         
         self.state = MenuState(self)
         
@@ -23,7 +24,7 @@ class Game:
             self.state.update()
             self.state.draw(self.screen)
 
-            pygame.display.flip()  # ← add this
+            pygame.display.flip()
             self.clock.tick(60)
 
 if __name__ == "__main__":

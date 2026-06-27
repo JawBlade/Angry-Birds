@@ -1,435 +1,263 @@
-import math
-from tkinter import font
-import pygame
-import pymunk
-from objects import image, Box
-import pymunk.pygame_util
-from characters import Pig, Bird
-from helpers import create_band, snap_check, grab, make_box, respawn, clamp_vels
-from levels import LEVELS
-import time
+#!/usr/bin/env python3
+"""
+count_lines.py — Count lines of code in .py and .md files.
 
-class State:
-    def __init__(self, game):
-        self.game = game
+For each file it reports:
+  - Total lines
+  - Blank lines
+  - Comment lines  (# lines for .py, HTML/markdown comments for .md)
+  - Code lines     (total minus blanks and comments)
 
-    def handle_event(self, event):
-        pass
+Run from any directory:
+    python count_lines.py            # scans current directory (non-recursive)
+    python count_lines.py --recurse  # walks all subdirectories too
+"""
 
-    def update(self):
-        pass
+import os
+import re
+import argparse
+from pathlib import Path
 
-    def draw(self, screen):
-        pass
 
-    # func to help create a button
-    def draw_button(self, surf, rect, text, font_size=int(44), icon_path=None):
-        
-        self.GOLD_DARK  = (210, 140,  10)
-        self.GOLD_MID   = (240, 175,  20)
-        self.GOLD_LIGHT = (255, 210,  80)
-        self.CREAM      = (255, 245, 210)
+# ---------------------------------------------------------------------------
+# Counters
+# ---------------------------------------------------------------------------
 
-        font = pygame.font.Font('angrybirds/angrybirds-regular.ttf', font_size)
-        self.level_rect = rect
-        self.text_surf = font.render(text, True, (255, 255, 255))
-        self.shadow_surf = font.render(text, True, (180, 140, 30))
-        
-        r = self.level_rect
-        RADIUS = 18
+def count_python(lines: list[str]) -> dict:
+    """Count lines in a .py file, handling inline # and block ''' / \" \"\"."""
+    total = len(lines)
+    blank = 0
+    comment = 0
+    in_multiline = False
+    multiline_char = None
 
-        pygame.draw.rect(surf, self.GOLD_DARK, r, border_radius=RADIUS)
+    for raw in lines:
+        stripped = raw.strip()
 
-        inner = r.inflate(-6, -6)
-        pygame.draw.rect(surf, self.GOLD_MID, inner, border_radius=RADIUS - 2)
+        if not stripped:
+            blank += 1
+            continue
 
-        rim = inner.inflate(-6, -6)
-        pygame.draw.rect(surf, self.CREAM, rim, border_radius=RADIUS - 4)
+        if in_multiline:
+            comment += 1
+            # Check whether the closing delimiter is on this line
+            idx = stripped.find(multiline_char)
+            if idx != -1:
+                # Closing delimiter found — leave multiline mode
+                # (the rest of the line after the delimiter is code, but
+                #  we've already counted the whole line as comment; this
+                #  is the conventional approach most tools use)
+                in_multiline = False
+            continue
 
-        fill = rim.inflate(-8, -8)
-        pygame.draw.rect(surf, self.GOLD_MID, fill, border_radius=RADIUS - 6)
-
-        tx = r.centerx - self.text_surf.get_width() // 2
-        ty = r.centery - self.text_surf.get_height() // 2 - 2
-        for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
-            surf.blit(self.shadow_surf, (tx + dx, ty + dy))
-        surf.blit(self.text_surf, (tx, ty))
-
-        # Claude Did this for me
-        if icon_path:
-            icon = pygame.image.load(icon_path).convert_alpha()
-            # Scale to fit inside the button with some padding
-            icon_size = min(rect.height - 20, rect.width - 20)
-            icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))
-            icon_rect = icon.get_rect(center=rect.center)
-            surf.blit(icon, icon_rect)
+        # Detect opening of a triple-quoted string used as a block comment.
+        # We only treat it as a comment when it's the first non-whitespace
+        # token on the line (i.e. a standalone docstring / block comment).
+        for delim in ('"""', "'''"):
+            if stripped.startswith(delim):
+                # Is the closing delimiter also on the same line (and not
+                # immediately re-opened — e.g. `"""one liner"""`)?
+                rest = stripped[len(delim):]
+                if rest.find(delim) != -1:
+                    # One-liner: open and close on same line → comment line
+                    comment += 1
+                else:
+                    # Multi-line block opens here
+                    in_multiline = True
+                    multiline_char = delim
+                    comment += 1
+                break
         else:
-            # your existing text drawing code
-            tx = r.centerx - self.text_surf.get_width() // 2
-            ty = r.centery - self.text_surf.get_height() // 2 - 2
-            for dx, dy in [(-2, 2), (2, 2), (0, 3), (-2, -1), (2, -1)]:
-                surf.blit(self.shadow_surf, (tx + dx, ty + dy))
-            surf.blit(self.text_surf, (tx, ty))
-
-class PlayingState(State):
-    def __init__(self, game, level_num=1):
-        super().__init__(game)
-
-        self.level_num = level_num
-        level_data = LEVELS[level_num]
-
-        self.WIDTH, self.HEIGHT = (self.game.WIDTH, self.game.HEIGHT)
-        self.screen = self.game.screen
-        self.clock = self.game.clock
-
-        self.space = pymunk.Space()
-        self.space.gravity = (0, 900)
-        self.space.damping = 0.65
-        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
-
-        self.space.on_collision(1, 2, post_solve=self.on_hit) # Handles the collision between bird and boxes.
-
-        self.space.on_collision(2, 3, post_solve=self.on_hit) # Handles the collision between boxes and pigs.
-
-        self.space.on_collision(1, 3, post_solve=self.on_hit) # Handles collisions between birds and pigs.
-
-        self.boxes = [
-            make_box(b["size"], b["pos"], self.space)
-            for b in level_data["boxes"]
-        ]
-
-        floor_body = self.space.static_body
-        floor_body.position = (0, 567)
-        floor = pymunk.Segment(floor_body, (-1000, 0), (2280, 0), 1)
-        floor.friction = 1
-        floor.color = (103, 177, 20, 0)
-        self.space.add(floor)
-
-        right_wall = pymunk.Segment(self.space.static_body, (1280, -1000), (1280, 1000), 1)
-        right_wall.friction = 1
-        self.space.add(right_wall)
-
-        left_wall = pymunk.Segment(self.space.static_body, (0, -1000), (0, 1000), 1)
-        left_wall.friction = 1
-        self.space.add(left_wall)
-
-        # Setting up the bird, rubber band and pigs.
-        self.red_body = Bird(0.6, 27, (225, 410), image_path="images/red2.webp")
-        self.red = self.red_body.create(self.space)
-
-        self.band = pygame.Surface((10, 20), pygame.SRCALPHA)
-        self.band.fill((159, 26, 13))
-
-        self.pigs = []
-        for p in level_data["pigs"]:
-            pig_b = Pig(p["mass"], p["radius"], p["pos"], image_path="images/pig.webp")
-            pig = pig_b.create(self.space)
-            self.pigs.append((pig_b, pig))
-
-        # Normal vars for logic.
-        self.released = False
-        self.mouse_pos = (0, 0)
-        self.dragging = False
-        self.idle = True
-        self.launch = False
-        self.MAX_PULL = 120
-        self.SLING_POS = (225, 410)
-        self.LIVES = level_data["lives"]
-        self.end = False
-
-        #Pause Button 
-        #                                x  y   W   H
-        self.Pause_Button = pygame.Rect(20, 12, 65, 65)
-
-        self.End_Button = pygame.Rect(self.game.WIDTH - 160, self.game.HEIGHT - 70, 150, 60)
-
-        # Shows how many lives u got.
-        self.life_display = []
-        for i in range(self.LIVES -1):
-            life_counter = image('images/red2.webp', (64, 64))
-            self.life_display.append(life_counter)
-
-        self.bg_img = image('images/back.jpg', (self.WIDTH, self.HEIGHT))
-        self.sling_r = image('images/slingshot/right_stick_sling.png', (300, 300))
-        self.sling_l = image('images/slingshot/left_stick_sling.png', (300, 300))
-
-        # Fliping the values bc i named them wrong
-        self.entities = {}
-        for pig_b, pig in self.pigs:
-            self.entities[pig] = pig_b
-        for box_obj, box_body in self.boxes:
-            self.entities[box_body] = box_obj
-
-        
-        self.start_time = time.perf_counter() # To add a Higher score if you finsh the level faster.
-        self.score = 0
-
-    # This handles like all the inputs for the game.
-    def handle_event(self, event):
-        if event.type == pygame.QUIT:
-            self.game.running = False
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-
-            # Checking if the bird if slow enough to respawn and if it was launched.
-            if self.red.velocity.length <= 75:
-                if self.released:
-                    self.LIVES -= 1
-                self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
-
-            bird_x, bird_y = self.red.position
-            mouse_x, mouse_y = event.pos
-            dist = math.hypot(bird_x - mouse_x, bird_y - mouse_y)
-
-            # Mouse has to be close enough to drag and hasn't been launched.
-            if dist < 40 and not self.launch:
-                self.dragging = True
-                self.released = False
-
-            if grab(self.mouse_pos, self.red, self.released, self.launch):
-                self.dragging = True
-
-            # For the Pause button
-            if self.Pause_Button.collidepoint(event.pos):
-                self.game.change_state(PausedState(self.game, self))
-            elif self.End_Button.collidepoint(event.pos):
-                self.game.change_state(GameoverState(self.game, self))
-
-        if event.type == pygame.MOUSEBUTTONUP:
-
-            # Logic that launches the bird.
-            if self.dragging and not self.launch:
-                self.dragging = False
-                self.released = True
-                px, py = self.red.position
-                offset_x = 225 - px
-                offset_y = 410 - py
-                POWER = 12
-                self.red.body_type = pymunk.Body.DYNAMIC
-                self.red.velocity = (offset_x * POWER, offset_y * POWER)
-
-    # Updates all the vars that need to be updated and some logic.
-    def update(self):
-
-        self.pig_count = sum(1 for obj in self.entities.values() if isinstance(obj, Pig))
-
-        bird_x, bird_y = self.red.position
-        self.mouse_pos = pygame.mouse.get_pos()
-
-        # The main big if statement that handles the dragging and launching of the bird.
-        if self.dragging:
-            self.idle = False
-            dx, dy = self.mouse_pos[0] - self.SLING_POS[0], self.mouse_pos[1] - self.SLING_POS[1]
-            dist = math.hypot(dx, dy)
-
-            # This sets the radus of how far we can pull back.
-            if dist > self.MAX_PULL:
-                dx = dx * self.MAX_PULL / dist
-                dy = dy * self.MAX_PULL / dist
-            self.red.position = (self.SLING_POS[0] + dx, self.SLING_POS[1] + dy)
-            self.red.velocity = (0, 0)
-            self.red.angular_velocity = 0
-        elif self.idle:
-            self.red.position = self.SLING_POS
-            self.red.velocity = (0, 0)
-        elif self.released and not self.launch:
-            self.released = snap_check(self.red, self.released)
-            self.launch = True
-
-        if self.launch and self.red.velocity.length <= 5:
-            if self.released:
-                self.LIVES -= 1
-            self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
-
-        # If the bird is off screen, respawn the bird.
-        elif (bird_x >= 1300 and bird_y >= 500) or (bird_x <= -400 and bird_y >= -1300) :
-            if self.released:
-                self.LIVES -= 1
-            self.released, self.dragging, self.idle, self.launch = respawn(self.red, self.LIVES)
-
-        clamp_vels(self.space) # Forgot what this does but Ik it's important.
-
-        # Logic that switches sprites
-        for body, obj in self.entities.items():
-            if obj.health is not None and obj.health <= 50:
-                if isinstance(obj, Box):
-                    obj._image_original = pygame.image.load('images/box_50hp.jpeg').convert_alpha()
-                    obj._cached_img = None
-                elif isinstance(obj, Pig):
-                    obj._image_original = pygame.image.load('images/50hp_pig.webp').convert_alpha()
-                    obj._cached_img = None
-
-        dead = [body for body, obj in self.entities.items() if obj.health is not None and obj.health <= 0]
-        
-        # Actually get rid of them on screen.
-        for body in dead:
-            obj = self.entities[body]
-
-            #Increases score when box breaks or pig dies
-            if type(obj).__name__ == 'Pig':
-                self.score += 3000
-            elif type(obj).__name__ == 'Box':
-                self.score += 1000
-            
-            self.entities[body].remove(body, self.space)
-            self.boxes = [[obj, b] for obj, b in self.boxes if b != body]
-            del self.entities[body]
-            
-        self.space.step(1.0 / 60.0)
-
-        dx, dy = bird_x - 225, bird_y - 410
-        angle_to_bird = math.atan2(dy, dx)
-        self.attach_point = (bird_x + math.cos(angle_to_bird) * 36, bird_y + math.sin(angle_to_bird) * 36)
-    
-    # Draws all the visuals
-    def draw(self, screen):
-        screen.blit(self.bg_img, (0, 0))
-
-        if self.pig_count == 0 or self.LIVES == 0:
-            self.draw_button(screen, self.End_Button, "END LEVEL", font_size=30)
-
-        # lives
-        gap = 100
-        for i in range(min(self.LIVES - 1, len(self.life_display))):
-            screen.blit(self.life_display[i], (gap, 10))
-            gap += 70
-        
-        # Display Score
-        text_surface = self.game.font.render(str(self.score), True, (0, 0, 0))
-        self.screen.blit(text_surface, (self.game.WIDTH - 210, 0))
-
-        self.draw_button(screen, self.Pause_Button, "II", font_size=35) # Pause button
-
-        if self.dragging:
-            create_band(screen, self.band, (257, 413), self.attach_point)
-
-        screen.blit(self.sling_r, (75, 320))
-        self.red_body.mask(screen, self.red)
-
-        if self.dragging:
-            create_band(screen, self.band, (197, 418), self.attach_point)
-
-        screen.blit(self.sling_l, (75, 320))
-
-        for pig_b, pig in self.pigs:
-            if pig in self.entities:
-                pig_b.mask(screen, pig)
-
-        for body, box in self.boxes:
-            body.mask(screen, box)
-
-    # Checks if the impules is above a threshold to damget eh obj based on the impulse.
-    def on_hit(self, arbiter, space, data):
-        impulse = arbiter.total_impulse.length
-        THRESHOLD = 30
-
-        if impulse > THRESHOLD:
-            damage = impulse * 0.5
-
-            for shape in arbiter.shapes:
-                body = shape.body
-
-                if body in self.entities:
-                    self.entities[body].health -= damage
-
-        return True
-
-# I got help creating the Button from claude.
-class MenuState(State):
-    def __init__(self, game):
-        super().__init__(game)
-        self.bg_img = image('images/back.jpg', (1280, 720))
-
-        self.growing = True
-        self.growth = 0
-
-        self.font_size = 44
-        self.menu = True
-
-        # Build one rect per level in LEVELS
-        self.level_count = len(LEVELS)
-        self.level_rects = []
-
-    # Checks what buttons are being pressed and what to do when they are
-    def handle_event(self, event):
-        if event.type == pygame.QUIT:
-            self.game.running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.menu:
-                if self.level_1_rect.collidepoint(event.pos):
-                    self.menu = False
-            else:
-                # Check each level button
-                for i, rect in enumerate(self.level_rects):
-                    if rect.collidepoint(event.pos):
-                        self.game.change_state(PlayingState(self.game, level_num=i + 1))
-                        return
-                if self.back_rect.collidepoint(event.pos):
-                    self.game.change_state(MenuState(self.game))
-
-
-    def update(self):
-        # The logic to animate the play button
-        if self.growing:
-            self.growth += 0.4
-            if self.menu:
-                self.font_size += 0.2
-            if self.growth >= 20:
-                self.growing = False
-        else:
-            self.growth -= 0.4
-            if self.menu:
-                self.font_size -= 0.2
-            if self.growth <= 0:
-                self.growing = True
-
-        if self.menu:
-            BTN_W, BTN_H = 212 + self.growth, 90 + self.growth
-        elif self.menu == False:
-            BTN_W, BTN_H = (75 , 90)
-
-        # Need to make a rect for each button
-        self.level_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
-        self.level_1_rect = pygame.Rect((1280 - BTN_W) // 2, (720 - BTN_H) // 2, BTN_W, BTN_H)
-        self.back_rect = pygame.Rect(20, 20, BTN_W + 20, BTN_H - 20)
-
-        # Build rects for each level button, laid out in a row centred on screen
-        BTN_SIZE = 75
-        GAP = 20
-        total_width = self.level_count * BTN_SIZE + (self.level_count - 1) * GAP
-        start_x = (1280 - total_width) // 2
-        self.level_rects = [
-            pygame.Rect(start_x + i * (BTN_SIZE + GAP), (720 - BTN_SIZE) // 2, BTN_SIZE, BTN_SIZE)
-            for i in range(self.level_count)
-        ]
-
-        self.level_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(self.font_size))
-        self.back_font = pygame.font.Font('C:/Users/vicbe/OneDrive/Desktop/Projects/Angry-Birds/angrybirds/angrybirds-regular.ttf', int(20))
-
-
-    # Drawing all the visuals for the menu
-    def draw(self, screen):
-        if self.menu:
-            screen.blit(self.bg_img, (0, 0))
-
-            self.draw_button(screen, self.level_rect, "LEVELS") # Level button
-
-            # The Title
-            text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
-            screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
-
-        elif self.menu == False: 
-
-            # Background
-            screen.blit(self.bg_img, (0, 0))
-
-            # Draw a button for each level
-            for i, rect in enumerate(self.level_rects):
-                self.draw_button(screen, rect, str(i + 1))
-
-            self.draw_button(screen, self.back_rect, "BACK", 25) # back button
-
-            text_surface = self.game.font.render("Angry Birds", True, (0, 0, 0))
-            screen.blit(text_surface, (self.game.WIDTH // 2 - text_surface.get_width() // 2, 100))
-
-print(f"Execution time: {execution_time:.6f} seconds")
+            # Regular single-line comment
+            if stripped.startswith('#'):
+                comment += 1
+            # else: it's a code line (no action needed; we derive it below)
+
+    code = total - blank - comment
+    return {"total": total, "blank": blank, "comment": comment, "code": code}
+
+
+def count_markdown(lines: list[str]) -> dict:
+    """Count lines in a .md file.
+
+    Comments: HTML-style <!-- ... --> blocks (can span multiple lines).
+    Code blocks (``` fenced) are counted as *code*, not comments.
+    """
+    total = len(lines)
+    blank = 0
+    comment = 0
+    in_html_comment = False
+
+    for raw in lines:
+        stripped = raw.strip()
+
+        if not stripped:
+            blank += 1
+            continue
+
+        if in_html_comment:
+            comment += 1
+            if '-->' in stripped:
+                in_html_comment = False
+            continue
+
+        if '<!--' in stripped:
+            comment += 1
+            # Check if the comment closes on the same line
+            close_idx = stripped.find('-->', stripped.find('<!--') + 4)
+            if close_idx == -1:
+                in_html_comment = True
+            continue
+
+        # Everything else (headings, paragraphs, fenced code, etc.) is "code"
+
+    code = total - blank - comment
+    return {"total": total, "blank": blank, "comment": comment, "code": code}
+
+
+# ---------------------------------------------------------------------------
+# File discovery & aggregation
+# ---------------------------------------------------------------------------
+
+EXTENSIONS = {'.py': count_python, '.md': count_markdown}
+
+
+def scan_directory(root: str, recurse: bool) -> list[Path]:
+    root_path = Path(root)
+    if recurse:
+        paths = []
+        for ext in EXTENSIONS:
+            paths.extend(root_path.rglob(f'*{ext}'))
+        return sorted(set(paths))
+    else:
+        paths = []
+        for ext in EXTENSIONS:
+            paths.extend(root_path.glob(f'*{ext}'))
+        return sorted(set(paths))
+
+
+def analyse_file(path: Path) -> dict | None:
+    counter = EXTENSIONS.get(path.suffix.lower())
+    if counter is None:
+        return None
+    try:
+        lines = path.read_text(encoding='utf-8', errors='replace').splitlines()
+        stats = counter(lines)
+        stats['file'] = str(path)
+        stats['type'] = path.suffix.lower()
+        return stats
+    except Exception as exc:
+        print(f"  [WARN] Could not read {path}: {exc}")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Reporting
+# ---------------------------------------------------------------------------
+
+COL_W = 10  # width for numeric columns
+
+def print_header():
+    print(
+        f"\n{'FILE':<45} {'TYPE':>5} "
+        f"{'TOTAL':>{COL_W}} {'BLANK':>{COL_W}} "
+        f"{'COMMENT':>{COL_W}} {'CODE':>{COL_W}}"
+    )
+    print('-' * (45 + 6 + COL_W * 4 + 3))
+
+
+def print_row(stats: dict):
+    fname = stats['file']
+    # Truncate very long paths from the left
+    if len(fname) > 44:
+        fname = '…' + fname[-(43):]
+    print(
+        f"{fname:<45} {stats['type']:>5} "
+        f"{stats['total']:>{COL_W},} {stats['blank']:>{COL_W},} "
+        f"{stats['comment']:>{COL_W},} {stats['code']:>{COL_W},}"
+    )
+
+
+def print_summary(totals_by_type: dict, grand: dict):
+    print('-' * (45 + 6 + COL_W * 4 + 3))
+
+    for ext, t in sorted(totals_by_type.items()):
+        label = f"SUBTOTAL {ext}"
+        print(
+            f"{label:<50} "
+            f"{t['total']:>{COL_W},} {t['blank']:>{COL_W},} "
+            f"{t['comment']:>{COL_W},} {t['code']:>{COL_W},}"
+        )
+
+    print('=' * (45 + 6 + COL_W * 4 + 3))
+    print(
+        f"{'GRAND TOTAL':<50} "
+        f"{grand['total']:>{COL_W},} {grand['blank']:>{COL_W},} "
+        f"{grand['comment']:>{COL_W},} {grand['code']:>{COL_W},}"
+    )
+    pct_comment = (grand['comment'] / grand['total'] * 100) if grand['total'] else 0
+    pct_code    = (grand['code']    / grand['total'] * 100) if grand['total'] else 0
+    print(
+        f"\n  Code lines    : {grand['code']:,}  ({pct_code:.1f}% of total)\n"
+        f"  Comment lines : {grand['comment']:,}  ({pct_comment:.1f}% of total)\n"
+        f"  Blank lines   : {grand['blank']:,}\n"
+        f"  Total lines   : {grand['total']:,}\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Count lines of code in .py and .md files.'
+    )
+    parser.add_argument(
+        '--recurse', '-r', action='store_true',
+        help='Scan subdirectories recursively (default: current dir only)'
+    )
+    parser.add_argument(
+        'directory', nargs='?', default='.',
+        help='Directory to scan (default: current directory)'
+    )
+    args = parser.parse_args()
+
+    scan_root = os.path.abspath(args.directory)
+    print(f"\nScanning: {scan_root}"
+          f"{'  (recursive)' if args.recurse else '  (top-level only)'}")
+
+    files = scan_directory(scan_root, args.recurse)
+    if not files:
+        print("  No .py or .md files found.")
+        return
+
+    results = []
+    for f in files:
+        stats = analyse_file(f)
+        if stats:
+            results.append(stats)
+
+    if not results:
+        print("  Could not read any files.")
+        return
+
+    # Totals
+    totals_by_type: dict[str, dict] = {}
+    grand = {"total": 0, "blank": 0, "comment": 0, "code": 0}
+
+    print_header()
+    for s in results:
+        print_row(s)
+        ext = s['type']
+        if ext not in totals_by_type:
+            totals_by_type[ext] = {"total": 0, "blank": 0, "comment": 0, "code": 0}
+        for k in ("total", "blank", "comment", "code"):
+            totals_by_type[ext][k] += s[k]
+            grand[k] += s[k]
+
+    print_summary(totals_by_type, grand)
+
+
+if __name__ == '__main__':
+    main()
