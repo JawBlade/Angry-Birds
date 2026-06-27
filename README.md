@@ -1,6 +1,5 @@
 # Angry Birds (Knock-off)
 #### Video Demo: https://youtu.be/5fEJoUKW7wM
-#### Description:
 
 ## What is this project?
 
